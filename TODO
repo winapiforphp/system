@@ -1,0 +1,8 @@
+Spreadsheet with C -> PHP mappings
+
+Process control support
+Threading (FOR TS PHP versions ONLY)
+Basic Windows System Information (OS and other info)
+Registry Access
+Syncronization (semaphores, locks, etc - SOME ITEMS ONLY AVAILABLE IN TS PHP)
+Some Device Services (IO for serial, usb, etc)

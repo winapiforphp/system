@@ -1,0 +1,12 @@
+Wrapper for Windows API - can be used with all SAPI's
+
+Contains:
+
+Unicode string class
+locale and globalization control
+Process control
+Threading (FOR TS PHP versions ONLY)
+Basic Windows System Information (OS and other info)
+Registry Access
+Syncronization (semaphores, locks, etc - SOME ITEMS ONLY AVAILABLE IN TS PHP)
+Some Device Services (IO for serial, usb, etc)

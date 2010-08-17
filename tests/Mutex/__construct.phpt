@@ -1,0 +1,111 @@
+--TEST--
+Win\System\Mutex->__construct() method
+--SKIPIF--
+<?php
+if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+?>
+--FILE--
+<?php
+use Win\System\Mutex;
+use Win\System\Event;
+use Win\System\Unicode;
+
+// new unnamed mutex, have to pass by object now
+$mutex = new Mutex();
+var_dump($mutex->getName());
+var_dump($mutex->isOwned());
+
+// new named mutex
+$mutex = new Mutex('foobar');
+var_dump($mutex->getName());
+var_dump($mutex->isOwned());
+
+// try to open and own same mutex - will blow up
+try {
+    $mutex = new Mutex('foobar', true);
+} catch (Exception $e) {
+    echo $e->getMessage(), "\n";
+}
+
+// try to open event with same name
+try {
+    $event = new Event('foobar');
+} catch (Exception $e) {
+    echo $e->getMessage(), "\n";
+}
+
+// new unicode mutex
+$string = 'काचं शक्नोम्यत्तुम् । नोपहिनस्ति माम् ॥';
+$unicode = new Unicode($string, Unicode::UTF_8);
+$mutex = new Mutex($unicode);
+var_dump($mutex->getName());
+var_dump($mutex->isOwned());
+
+// try to open and own same mutex - will blow up
+try {
+    $mutex = new Mutex($unicode, true);
+} catch (Exception $e) {
+    echo $e->getMessage(), "\n";
+}
+
+// try to open event with same name
+try {
+    $event = new Event($unicode);
+} catch (Exception $e) {
+    echo $e->getMessage(), "\n";
+}
+
+// new named mutex owned
+$mutex = new Mutex('silly', true);
+var_dump($mutex->getName());
+var_dump($mutex->isOwned());
+
+// new unnamed mutex can inherit
+$mutex = new Mutex(null, false, true);
+var_dump($mutex->getName());
+var_dump($mutex->isOwned());
+
+// requires 0-3 args, 4 is too many
+try {
+    $mutex = new Mutex(1, 1, 1, 1);
+} catch (Exception $e) {
+    echo $e->getMessage(), "\n";
+}
+
+// arg 1 must be stringable or instanceof Unicode
+try {
+    $mutex = new Mutex(array(), 1, 1);
+} catch (Exception $e) {
+    echo $e->getMessage(), "\n";
+}
+
+// arg 2 must be booleanable
+try {
+    $mutex = new Mutex('string', array(), 1);
+} catch (Exception $e) {
+    echo $e->getMessage(), "\n";
+}
+
+// arg 3 must be booleanable
+try {
+    $mutex = new Mutex('string', 1, array());
+} catch (Exception $e) {
+    echo $e->getMessage(), "\n";
+}
+die;
+?>
+--EXPECTF--
+NULL
+bool(false)
+string(6) "foobar"
+bool(false)
+Mutex could not be created and marked as owned
+Could not create or open the requested event
+string(5) "silly"
+bool(true)
+NULL
+bool(false)
+Win\System\Mutex::__construct() expects at most 3 parameters, 4 given
+Win\System\Mutex::__construct() expects parameter 1 to be string, array given
+Win\System\Mutex::__construct() expects parameter 2 to be boolean, array given
+Win\System\Mutex::__construct() expects parameter 3 to be boolean, array given

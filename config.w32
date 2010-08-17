@@ -1,0 +1,9 @@
+// $Id: config.w32 71 2007-11-29 21:13:43Z auroraeosrose $
+// vim:ft=javascript
+
+ARG_WITH("winsystem", "Windows System Tools", "no");
+
+if (PHP_WINSYSTEM != "no") {
+    EXTENSION("winsystem", "winsystem.c");
+    AC_DEFINE('HAVE_WINSYSTEM', 1, 'Windows System Tools funtionality');
+}
