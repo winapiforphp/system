@@ -152,6 +152,7 @@ PHP_MINIT_FUNCTION(winsystem_semaphore);
 PHP_MINIT_FUNCTION(winsystem_event);
 PHP_MINIT_FUNCTION(winsystem_timer);
 PHP_MINIT_FUNCTION(winsystem_thread);
+PHP_MINIT_FUNCTION(winsystem_unicode);
 
 PHP_MSHUTDOWN_FUNCTION(winsystem_thread);
 
