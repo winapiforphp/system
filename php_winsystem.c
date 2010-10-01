@@ -29,14 +29,14 @@ ZEND_DECLARE_MODULE_GLOBALS(winsystem);
 PHP_MINIT_FUNCTION(winsystem)
 {
 	PHP_MINIT(winsystem_util)(INIT_FUNC_ARGS_PASSTHRU);
-	PHP_MINIT(winsystem_waitable)(INIT_FUNC_ARGS_PASSTHRU);
-	PHP_MINIT(winsystem_mutex)(INIT_FUNC_ARGS_PASSTHRU);
-	PHP_MINIT(winsystem_semaphore)(INIT_FUNC_ARGS_PASSTHRU);
-	PHP_MINIT(winsystem_event)(INIT_FUNC_ARGS_PASSTHRU);
-	PHP_MINIT(winsystem_timer)(INIT_FUNC_ARGS_PASSTHRU);
+	//PHP_MINIT(winsystem_waitable)(INIT_FUNC_ARGS_PASSTHRU);
+	//PHP_MINIT(winsystem_mutex)(INIT_FUNC_ARGS_PASSTHRU);
+	//PHP_MINIT(winsystem_semaphore)(INIT_FUNC_ARGS_PASSTHRU);
+	//PHP_MINIT(winsystem_event)(INIT_FUNC_ARGS_PASSTHRU);
+	//PHP_MINIT(winsystem_timer)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(winsystem_unicode)(INIT_FUNC_ARGS_PASSTHRU);
 #ifdef ZTS
-	PHP_MINIT(winsystem_thread)(INIT_FUNC_ARGS_PASSTHRU);
+	//PHP_MINIT(winsystem_thread)(INIT_FUNC_ARGS_PASSTHRU);
 #endif
 	return SUCCESS;
 }
@@ -45,7 +45,7 @@ PHP_MINIT_FUNCTION(winsystem)
 PHP_MSHUTDOWN_FUNCTION(winsystem)
 {
 #ifdef ZTS
-	PHP_MSHUTDOWN(winsystem_thread)(INIT_FUNC_ARGS_PASSTHRU);
+	//PHP_MSHUTDOWN(winsystem_thread)(INIT_FUNC_ARGS_PASSTHRU);
 	ts_free_id(winsystem_globals_id);
 #endif
 	return SUCCESS;

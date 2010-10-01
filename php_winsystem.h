@@ -46,74 +46,82 @@
 ------------------------------------------------------------------*/
 #define PHP_WINSYSTEM_NS ZEND_NS_NAME("Win", "System")
 
+/* The name can be either a string or unicode object */
+typedef union _winsystem_name {
+	zval *      unicode_object;
+	char *      string;
+} winsystem_name;
+
 /* unicode object */
 typedef struct _winsystem_unicode_object {
 	zend_object  std;
-	WCHAR * unicode_string;
-	CHAR * multibyte_string;
+	zend_bool    is_constructed;
+	WCHAR *      unicode_string;
+	CHAR *       multibyte_string;
 } winsystem_unicode_object;
 
 /* mutex object */
 typedef struct _winsystem_mutex_object {
-	zend_object  std;
-	zend_object_handle handle;
-	HANDLE handle_object;
-	BOOL is_owned;
-	BOOL can_inherit;
-	zval * unicode;
-	char * name;
+	zend_object    std;
+	zend_bool      is_constructed;
+	HANDLE         handle;
+	BOOL           is_owned;
+	BOOL           can_inherit;
+	zend_bool      is_unicode;
+	winsystem_name name;
 } winsystem_mutex_object;
 
 /* semaphore object */
 typedef struct _winsystem_semaphore_object {
-	zend_object  std;
-	zend_object_handle handle;
-	HANDLE handle_object;
-	long count;
-	long max_count;
-	BOOL can_inherit;
-	char * name;
+	zend_object    std;
+	zend_bool      is_constructed;
+	HANDLE         handle;
+	long           count;
+	long           max_count;
+	BOOL           can_inherit;
+	zend_bool      is_unicode;
+	winsystem_name name;
 } winsystem_semaphore_object;
 
 /* event object */
 typedef struct _winsystem_event_object {
-	zend_object  std;
-	zend_object_handle handle;
-	HANDLE handle_object;
-	BOOL auto_reset;
-	BOOL can_inherit;
-	char * name;
+	zend_object    std;
+	zend_bool      is_constructed;
+	HANDLE         handle;
+	BOOL           auto_reset;
+	BOOL           can_inherit;
+	winsystem_name name;
 } winsystem_event_object;
 
 /* timer object */
 typedef struct _winsystem_timer_object {
-	zend_object  std;
-	zend_object_handle handle;
-	HANDLE handle_object;
-	BOOL auto_reset;
-	BOOL can_inherit;
-	char * name;
+	zend_object    std;
+	zend_bool      is_constructed;
+	HANDLE         handle;
+	BOOL           auto_reset;
+	BOOL           can_inherit;
+	winsystem_name name;
 } winsystem_timer_object;
 
 /* Data structure for threads information */
 typedef struct _winsystem_thread_data {
-	char *src_filename;
-	uint src_lineno;
-	char * file;
-	void ***parent_tsrmls;
-	HANDLE start_event;
-	HANDLE thread_handle;
-	DWORD thread_id;
-	void ***child_tsrmls;
-	char *classname;
-	int classlen;
+	char *   src_filename;
+	uint     src_lineno;
+	char *   file;
+	void *** parent_tsrmls;
+	HANDLE   start_event;
+	HANDLE   thread_handle;
+	DWORD    thread_id;
+	void *** child_tsrmls;
+	char *   classname;
+	int      classlen;
 } winsystem_thread_data;
 
 /* thread object */
 typedef struct _winsystem_thread_object {
 	zend_object  std;
-	zend_object_handle handle;
-	HANDLE handle_object;
+	zend_bool      is_constructed;
+	HANDLE handle;
 } winsystem_thread_object;
 
 int unset_abstract_flag(zend_function *func TSRMLS_DC, int num_args, va_list args, zend_hash_key *hash_key);
@@ -127,7 +135,6 @@ extern zend_class_entry *ce_winsystem_exception;
 
 /* Exported class entry */
 extern PHP_WINSYSTEM_API zend_class_entry *ce_winsystem_unicode;
-extern inline winsystem_unicode_object* winsystem_unicode_object_get(zval *zobj TSRMLS_DC);
 
 /* ----------------------------------------------------------------
   Object Globals, lifecycle and static linking                                                

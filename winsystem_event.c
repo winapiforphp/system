@@ -26,16 +26,6 @@ ZEND_DECLARE_MODULE_GLOBALS(winsystem);
 /* All the classes in this file */
 zend_class_entry *ce_winsystem_event;
 
-static inline winsystem_event_object* winsystem_event_object_get(zval *zobj TSRMLS_DC)
-{
-    winsystem_event_object *pobj = zend_object_store_get_object(zobj TSRMLS_CC);
-    if (pobj->handle_object == NULL) {
-		php_error(E_ERROR, "Internal event handle missing in %s class, you must call parent::__construct in extended classes", Z_OBJCE_P(zobj)->name);
-		return NULL;
-    }
-    return pobj;
-}
-
 /* ----------------------------------------------------------------
   Win\System\Event Userland API                                                    
 ------------------------------------------------------------------*/
