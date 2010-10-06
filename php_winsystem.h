@@ -16,14 +16,8 @@
   +----------------------------------------------------------------------+
 */
 
-/* $Id$ */
-
 #ifndef PHP_WINSYSTEM_H
 #define PHP_WINSYSTEM_H
-
-/* In order to allow newer features tell the compiler we're the same as the sdk default version */
-#define _WIN32_WINNT                     0x0600
-#define _WIN32_IE                        0x0600
 
 /* version info file */
 #include "winsystem_version.h"
@@ -46,7 +40,7 @@
 ------------------------------------------------------------------*/
 #define PHP_WINSYSTEM_NS ZEND_NS_NAME("Win", "System")
 
-/* The name can be either a string or unicode object */
+/* Names in most things can be either a string or unicode object */
 typedef union _winsystem_name {
 	zval *      unicode_object;
 	char *      string;
@@ -120,12 +114,18 @@ typedef struct _winsystem_thread_data {
 /* thread object */
 typedef struct _winsystem_thread_object {
 	zend_object  std;
-	zend_bool      is_constructed;
-	HANDLE handle;
+	zend_bool    is_constructed;
+	HANDLE       handle;
 } winsystem_thread_object;
 
-int unset_abstract_flag(zend_function *func TSRMLS_DC, int num_args, va_list args, zend_hash_key *hash_key);
-void winsystem_create_error(int error, zend_class_entry *ce TSRMLS_DC);
+/* ----------------------------------------------------------------
+  Exported C API                                            
+------------------------------------------------------------------*/
+
+extern PHP_WINSYSTEM_API zend_class_entry *ce_winsystem_unicode;
+extern PHP_WINSYSTEM_API void winsystem_create_error(int error, zend_class_entry *ce TSRMLS_DC);
+extern PHP_WINSYSTEM_API WCHAR * win_system_convert_to_wchar(const CHAR ** utf8_string, int type);
+extern PHP_WINSYSTEM_API CHAR * win_system_convert_to_char(const WCHAR ** utf16_string, int type);
 
 /* ----------------------------------------------------------------
   Class Entries                                              
@@ -133,8 +133,10 @@ void winsystem_create_error(int error, zend_class_entry *ce TSRMLS_DC);
 extern zend_class_entry *ce_winsystem_waitable;
 extern zend_class_entry *ce_winsystem_exception;
 
-/* Exported class entry */
-extern PHP_WINSYSTEM_API zend_class_entry *ce_winsystem_unicode;
+/* ----------------------------------------------------------------
+  Internal APIs                                              
+------------------------------------------------------------------*/
+extern int unset_abstract_flag(zend_function *func TSRMLS_DC, int num_args, va_list args, zend_hash_key *hash_key);
 
 /* ----------------------------------------------------------------
   Object Globals, lifecycle and static linking                                                
