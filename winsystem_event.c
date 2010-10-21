@@ -16,8 +16,6 @@
   +----------------------------------------------------------------------+
 */
 
-/* $Id$ */
-
 #include "php_winsystem.h"
 #include "zend_exceptions.h"
 
@@ -26,9 +24,13 @@ ZEND_DECLARE_MODULE_GLOBALS(winsystem);
 /* All the classes in this file */
 zend_class_entry *ce_winsystem_event;
 
+static zend_object_handlers winsystem_event_object_handlers;
+static zend_function winsystem_event_constructor_wrapper;
+
 /* ----------------------------------------------------------------
   Win\System\Event Userland API                                                    
 ------------------------------------------------------------------*/
+
 ZEND_BEGIN_ARG_INFO_EX(WinSystemEvent___construct_args, ZEND_SEND_BY_VAL, ZEND_RETURN_VALUE, 0)
 	ZEND_ARG_INFO(0, name)
 	ZEND_ARG_INFO(0, initial_state)
@@ -54,18 +56,15 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO(WinSystemEvent_canInherit_args, ZEND_SEND_BY_VAL)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO(WinSystemEvent_wait_args, ZEND_SEND_BY_VAL)
-ZEND_END_ARG_INFO()
-
-/* {{{ proto bool Win\System\Event->__construct()
+/* {{{ proto Win\System\Event Win\System\Event->__construct()
        creates a new event */
 PHP_METHOD(WinSystemEvent, __construct)
 {
-	/* Used for multibyte string */
+	/* Used for regular string */
 	char * name = NULL;
 	int name_length;
 
-	/* Used for widechar string */
+	/* Used for unicode string */
 	zval *unicode = NULL;
 	winsystem_unicode_object *unicode_object = NULL;
 	int use_unicode = 0;
@@ -226,28 +225,6 @@ PHP_METHOD(WinSystemEvent, isAutoReset)
 }
 /* }}} */
 
-/* {{{ proto bool Win\System\Event->wait([int $milliseconds, bool $alertable])
-        checks the current state of the specified mutex
-		If the object's state is nonsignaled, the calling thread waits until the object is signaled
-		or the time-out interval elapses. */
-PHP_METHOD(WinSystemEvent, wait)
-{
-	DWORD ret;
-	long milliseconds = INFINITE;
-	winsystem_event_object *event = (winsystem_event_object *)winsystem_event_object_get(getThis() TSRMLS_CC);
-
-	// TODO: parse parameters here and support EX
-
-	if (event->handle_object == NULL) {
-		//zend_throw_exception_ex(spl_ce_BadMethodCallException, 0 TSRMLS_CC, "Missing internal data, remember to call parent::__construct in extended classes");
-		return;
-	}
-
-	ret = WaitForSingleObject(event->handle_object, milliseconds);
-	RETURN_LONG(ret);
-}
-/* }}} */
-
 /* register event methods */
 static zend_function_entry winsystem_event_functions[] = {
 	PHP_ME(WinSystemEvent, __construct, WinSystemEvent___construct_args, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
@@ -257,7 +234,6 @@ static zend_function_entry winsystem_event_functions[] = {
 	PHP_ME(WinSystemEvent, getName, WinSystemEvent_getName_args, ZEND_ACC_PUBLIC)
 	PHP_ME(WinSystemEvent, canInherit, WinSystemEvent_canInherit_args, ZEND_ACC_PUBLIC)
 	PHP_ME(WinSystemEvent, isAutoReset, WinSystemEvent_isAutoReset_args, ZEND_ACC_PUBLIC)
-	PHP_ME(WinSystemEvent, wait, WinSystemEvent_wait_args, ZEND_ACC_PUBLIC)
 	{NULL, NULL, NULL}
 };
 /* }}} */
@@ -265,6 +241,59 @@ static zend_function_entry winsystem_event_functions[] = {
 /* ----------------------------------------------------------------
   Win\System\Event Object Magic LifeCycle Functions                                                    
 ------------------------------------------------------------------*/
+
+/* fetch the constructor call */
+static zend_function *get_constructor(zval *object TSRMLS_DC)
+{
+    if (Z_OBJCE_P(object) == ce_winsystem_event)
+        return zend_get_std_object_handlers()->
+            get_constructor(object TSRMLS_CC);
+    else
+        return &winsystem_event_constructor_wrapper;
+}
+ 
+static void construction_wrapper(INTERNAL_FUNCTION_PARAMETERS) {
+    zval *this = getThis();
+    winsystem_unicode_object *tobj;
+    zend_class_entry *this_ce;
+    zend_function *zf;
+    zend_fcall_info fci = {0};
+    zend_fcall_info_cache fci_cache = {0};
+    zval *retval_ptr = NULL;
+    unsigned i;
+ 
+    tobj = zend_object_store_get_object(this TSRMLS_CC);
+    zf = zend_get_std_object_handlers()->get_constructor(this TSRMLS_CC);
+    this_ce = Z_OBJCE_P(this);
+ 
+    fci.size = sizeof(fci);
+    fci.function_table = &this_ce->function_table;
+    fci.object_ptr = this;
+    /* fci.function_name = ; not necessary to bother */
+    fci.retval_ptr_ptr = &retval_ptr;
+    fci.param_count = ZEND_NUM_ARGS();
+    fci.params = emalloc(fci.param_count * sizeof *fci.params);
+    /* Or use _zend_get_parameters_array_ex instead of loop: */
+    for (i = 0; i < fci.param_count; i++) {
+        fci.params[i] = (zval **) (zend_vm_stack_top(TSRMLS_C) - 1 -
+            (fci.param_count - i));
+    }
+    fci.object_ptr = this;
+    fci.no_separation = 0;
+ 
+    fci_cache.initialized = 1;
+    fci_cache.called_scope = EG(current_execute_data)->called_scope;
+    fci_cache.calling_scope = EG(current_execute_data)->current_scope;
+    fci_cache.function_handler = zf;
+    fci_cache.object_ptr = this;
+ 
+    zend_call_function(&fci, &fci_cache TSRMLS_CC);
+    if (!EG(exception) && tobj->is_constructed == 0)
+		zend_throw_exception_ex(NULL, 0 TSRMLS_CC,
+			"parent::__construct() must be called in %s::__construct()", this_ce->name);
+    efree(fci.params);
+    zval_ptr_dtor(&retval_ptr);
+}
 
 /* cleans up the handle object */
 static void winsystem_event_object_destructor(void *object TSRMLS_DC)
@@ -315,11 +344,27 @@ static zend_object_value winsystem_event_object_new(zend_class_entry *ce TSRMLS_
 PHP_MINIT_FUNCTION(winsystem_event)
 {
 	zend_class_entry ce;
+
+	memcpy(&winsystem_event_object_handlers, zend_get_std_object_handlers(),
+        sizeof winsystem_event_object_handlers);
+    winsystem_event_object_handlers.get_constructor = get_constructor;
 	
 	INIT_NS_CLASS_ENTRY(ce, PHP_WINSYSTEM_NS, "Event", winsystem_event_functions);
 	ce_winsystem_event = zend_register_internal_class(&ce TSRMLS_CC);
 	zend_class_implements(ce_winsystem_event TSRMLS_CC, 1, ce_winsystem_waitable);
-	ce_winsystem_event->create_object = winsystem_event_object_new;
+	ce_winsystem_event->create_object = winsystem_event_object_create;
+ 
+    winsystem_event_constructor_wrapper.type = ZEND_INTERNAL_FUNCTION;
+    winsystem_event_constructor_wrapper.common.function_name = "internal_construction_wrapper";
+    winsystem_event_constructor_wrapper.common.scope = ce_winsystem_event;
+    winsystem_event_constructor_wrapper.common.fn_flags = ZEND_ACC_PROTECTED;
+    winsystem_event_constructor_wrapper.common.prototype = NULL;
+    winsystem_event_constructor_wrapper.common.required_num_args = 0;
+    winsystem_event_constructor_wrapper.common.arg_info = NULL;
+    winsystem_event_constructor_wrapper.common.pass_rest_by_reference = 0;
+    winsystem_event_constructor_wrapper.common.return_reference = 0;
+    winsystem_event_constructor_wrapper.internal_function.handler = winsystem_event_construction_wrapper;
+    winsystem_event_constructor_wrapper.internal_function.module = EG(current_module);
 
 	return SUCCESS;
 }

@@ -235,7 +235,7 @@ static void winsystem_unicode_object_free(void *object TSRMLS_DC)
        object that has an internal WCHAR stored  */
 static zend_object_value winsystem_unicode_object_create(zend_class_entry *ce TSRMLS_DC)
 {
-    zend_object_value retval;
+    zend_object_value              retval;
     winsystem_unicode_object       *unicode_object;
  
 	unicode_object = ecalloc(1, sizeof(winsystem_unicode_object));
@@ -288,7 +288,7 @@ PHP_MINIT_FUNCTION(winsystem_unicode)
 	ce_winsystem_codepage = zend_register_internal_class(&code_ce TSRMLS_CC);
 	ce_winsystem_codepage->ce_flags |= ZEND_ACC_EXPLICIT_ABSTRACT_CLASS | ZEND_ACC_FINAL_CLASS;
 
-	zend_declare_class_constant_long(ce_winsystem_codepage, "UTF_16", sizeof("UTF_16")-1, 1200 TSRMLS_CC);
+	zend_declare_class_constant_long(ce_winsystem_codepage, "UTF16", sizeof("UTF16")-1, 1200 TSRMLS_CC);
 
 	zend_declare_class_constant_long(ce_winsystem_codepage, "ANSI",        sizeof("ANSI")-1,        CP_ACP TSRMLS_CC);
 	zend_declare_class_constant_long(ce_winsystem_codepage, "THREAD_ANSI", sizeof("THREAD_ANSI")-1, CP_THREAD_ACP TSRMLS_CC);

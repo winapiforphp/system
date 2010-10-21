@@ -13,7 +13,7 @@ class goodMutex extends Mutex {}
 
 class badMutex extends Mutex {
     public function __construct() {
-        echo "bad";
+        $this->release();
     }
 }
 
@@ -21,11 +21,13 @@ class badMutex extends Mutex {
 $mutex = new goodMutex();
 var_dump($mutex->getName());
 
-// bad mutex will fatal error
-$mutex = new badMutex();
-var_dump($mutex->getName());
+// bad mutex will throw exception
+try {
+    $mutex = new badMutex();
+} catch (Exception $e) {
+    echo $e->getMessage();
+}
 ?>
 --EXPECTF--
 NULL
-bad
-Fatal error: Internal mutex handle missing in badMutex class, you must call parent::__construct in extended classes in %s on line %d
+parent::__construct() must be called in badMutex::__construct()

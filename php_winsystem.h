@@ -132,6 +132,8 @@ extern PHP_WINSYSTEM_API CHAR * win_system_convert_to_char(const WCHAR ** utf16_
 ------------------------------------------------------------------*/
 extern zend_class_entry *ce_winsystem_waitable;
 extern zend_class_entry *ce_winsystem_exception;
+extern zend_class_entry *ce_winsystem_argexception;
+extern zend_class_entry *ce_winsystem_versionexception;
 
 /* ----------------------------------------------------------------
   Internal APIs                                              

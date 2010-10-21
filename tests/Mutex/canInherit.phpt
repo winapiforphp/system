@@ -7,7 +7,7 @@ if(!extension_loaded('winsystem')) die('skip - winsystem extension not available
 --FILE--
 <?php
 use Win\System\Mutex;
-use Win\System\Exception;
+use Win\System\ArgumentException;
 
 // create a normal mutex, default inherit is true
 $mutex = new Mutex();
@@ -24,7 +24,7 @@ var_dump($mutex->canInherit());
 // bad number of args
 try {
     $mutex->canInherit(1);
-} catch (Exception $e) {
+} catch (ArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 ?>

@@ -20,18 +20,27 @@
 
 #include "php_winsystem.h"
 #include "zend_exceptions.h"
+#include "ext/spl/spl_exceptions.h"
 
 ZEND_DECLARE_MODULE_GLOBALS(winsystem);
 
 zend_class_entry *ce_winsystem_exception;
+zend_class_entry *ce_winsystem_argexception;
+zend_class_entry *ce_winsystem_versionexception;
 
 /* {{{ PHP_MINIT_FUNCTION */
 PHP_MINIT_FUNCTION(winsystem_util)
 {
-	zend_class_entry ce;
+	zend_class_entry ce, arg_ce, version_ce;
 
 	INIT_NS_CLASS_ENTRY(ce, PHP_WINSYSTEM_NS, "Exception", NULL);
 	ce_winsystem_exception = zend_register_internal_class_ex(&ce, zend_exception_get_default(TSRMLS_C), "Exception" TSRMLS_CC);
+
+	INIT_NS_CLASS_ENTRY(arg_ce, PHP_WINSYSTEM_NS, "ArgumentException", NULL);
+	ce_winsystem_argexception = zend_register_internal_class_ex(&arg_ce, spl_ce_InvalidArgumentException, "InvalidArgumentException" TSRMLS_CC);
+
+	INIT_NS_CLASS_ENTRY(version_ce, PHP_WINSYSTEM_NS, "VersionException", NULL);
+	ce_winsystem_versionexception = zend_register_internal_class_ex(&version_ce, spl_ce_RuntimeException, "RuntimeException" TSRMLS_CC);
 
 	return SUCCESS;
 }

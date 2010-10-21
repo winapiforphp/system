@@ -16,21 +16,38 @@
   +----------------------------------------------------------------------+
 */
 
-/* $Id$ */
-
 #include "php_winsystem.h"
 
 /* All the classes in this file */
 zend_class_entry *ce_winsystem_waitable;
 
-
 /* ----------------------------------------------------------------
   \Win\System\Waitable Userland API                                                    
 ------------------------------------------------------------------*/
+ZEND_BEGIN_ARG_INFO(WinSystemWaitable_wait_args, ZEND_SEND_BY_VAL)
+ZEND_END_ARG_INFO()
 
-/* register thread methods */
+/* {{{ proto bool Win\System\Waitable->wait([int $milliseconds, bool $alertable])
+        checks the current state of the specified mutex
+		If the object's state is nonsignaled, the calling thread waits until the object is signaled
+		or the time-out interval elapses. */
+PHP_METHOD(WinSystemWaitable, wait)
+{
+	DWORD ret;
+	long milliseconds = INFINITE;
+	winsystem_mutex_object *object = (winsystem_mutex_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
+
+	// TODO: parse parameters here and support EX
+
+	ret = WaitForSingleObject(object->handle, milliseconds);
+	object->is_owned = TRUE;
+	RETURN_LONG(ret);
+}
+/* }}} */
+
+/* register methods */
 static zend_function_entry winsystem_waitable_functions[] = {
-	PHP_ABSTRACT_ME(WinSystemWaitable, wait, NULL)
+	PHP_ME(WinSystemWaitable, wait, WinSystemWaitable_wait_args, ZEND_ACC_PUBLIC|ZEND_ACC_ABSTRACT)
 	{NULL, NULL, NULL}
 };
 /* }}} */

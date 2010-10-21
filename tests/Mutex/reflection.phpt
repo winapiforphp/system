@@ -57,7 +57,7 @@ Class [ <internal:winsystem> class Win\System\Mutex implements Win\System\Waitab
       }
     }
 
-    Method [ <internal:winsystem, prototype Win\System\Waitable> public method wait ] {
+    Method [ <internal:winsystem, inherits Win\System\Waitable> public method wait ] {
 
       - Parameters [0] {
       }

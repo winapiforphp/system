@@ -16,8 +16,6 @@
   +----------------------------------------------------------------------+
 */
 
-/* $Id$ */
-
 #include "php_winsystem.h"
 
 ZEND_DECLARE_MODULE_GLOBALS(winsystem);
@@ -29,8 +27,8 @@ ZEND_DECLARE_MODULE_GLOBALS(winsystem);
 PHP_MINIT_FUNCTION(winsystem)
 {
 	PHP_MINIT(winsystem_util)(INIT_FUNC_ARGS_PASSTHRU);
-	//PHP_MINIT(winsystem_waitable)(INIT_FUNC_ARGS_PASSTHRU);
-	//PHP_MINIT(winsystem_mutex)(INIT_FUNC_ARGS_PASSTHRU);
+	PHP_MINIT(winsystem_waitable)(INIT_FUNC_ARGS_PASSTHRU);
+	PHP_MINIT(winsystem_mutex)(INIT_FUNC_ARGS_PASSTHRU);
 	//PHP_MINIT(winsystem_semaphore)(INIT_FUNC_ARGS_PASSTHRU);
 	//PHP_MINIT(winsystem_event)(INIT_FUNC_ARGS_PASSTHRU);
 	//PHP_MINIT(winsystem_timer)(INIT_FUNC_ARGS_PASSTHRU);
@@ -72,8 +70,8 @@ static void winsystem_finish_thread(void *data)
 /* initialize the thread list */
 PHP_RINIT_FUNCTION(winsystem)
 {	
-	zend_llist_init(&WINSYSTEM_G(processes), sizeof(HANDLE), NULL, 1);
-	zend_llist_init(&WINSYSTEM_G(threads), sizeof(winsystem_thread_data), winsystem_finish_thread, 1);
+	//zend_llist_init(&WINSYSTEM_G(processes), sizeof(HANDLE), NULL, 1);
+	//zend_llist_init(&WINSYSTEM_G(threads), sizeof(winsystem_thread_data), winsystem_finish_thread, 1);
 	return SUCCESS;
 }
 /* }}} */ 
@@ -81,8 +79,8 @@ PHP_RINIT_FUNCTION(winsystem)
 /* Free thread stuff if needed - will call the thread callbacks so we wait on them to finish */
 PHP_RSHUTDOWN_FUNCTION(winsystem)
 {
-	zend_llist_destroy(&WINSYSTEM_G(threads)); 
-	zend_llist_destroy(&WINSYSTEM_G(processes)); 
+	//zend_llist_destroy(&WINSYSTEM_G(threads)); 
+	//zend_llist_destroy(&WINSYSTEM_G(processes)); 
 	return SUCCESS;
 }
 
