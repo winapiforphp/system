@@ -17,6 +17,12 @@ class badMutex extends Mutex {
     }
 }
 
+class argMutex extends Mutex {
+    public function __construct($name) {
+        parent::__construct($name);
+    }
+}
+
 // good mutex is fine
 $mutex = new goodMutex();
 var_dump($mutex->getName());
@@ -25,9 +31,15 @@ var_dump($mutex->getName());
 try {
     $mutex = new badMutex();
 } catch (Exception $e) {
-    echo $e->getMessage();
+    echo $e->getMessage(), "\n";
 }
+
+// arg mutex will create a new named mutex
+$mutex = new argMutex('foobar');
+var_dump($mutex->getName());
+
 ?>
 --EXPECTF--
 NULL
 parent::__construct() must be called in badMutex::__construct()
+string(6) "foobar"

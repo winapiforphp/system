@@ -84,6 +84,7 @@ typedef struct _winsystem_event_object {
 	HANDLE         handle;
 	BOOL           auto_reset;
 	BOOL           can_inherit;
+	zend_bool      is_unicode;
 	winsystem_name name;
 } winsystem_event_object;
 

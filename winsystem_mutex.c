@@ -21,7 +21,7 @@
 
 ZEND_DECLARE_MODULE_GLOBALS(winsystem);
 
-PHP_WINSYSTEM_API zend_class_entry *ce_winsystem_mutex;
+zend_class_entry *ce_winsystem_mutex;
 static zend_object_handlers winsystem_mutex_object_handlers;
 static zend_function winsystem_mutex_constructor_wrapper;
 
@@ -31,6 +31,11 @@ static zend_function winsystem_mutex_constructor_wrapper;
 ZEND_BEGIN_ARG_INFO_EX(WinSystemMutex___construct_args, ZEND_SEND_BY_VAL, ZEND_RETURN_VALUE, 0)
 	ZEND_ARG_INFO(0, name)
 	ZEND_ARG_INFO(0, own)
+    ZEND_ARG_INFO(0, process_inherit)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(WinSystemMutex_open_args, ZEND_SEND_BY_VAL, ZEND_RETURN_VALUE, 1)
+	ZEND_ARG_INFO(0, name)
     ZEND_ARG_INFO(0, process_inherit)
 ZEND_END_ARG_INFO()
 
@@ -46,7 +51,7 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO(WinSystemMutex_canInherit_args, ZEND_SEND_BY_VAL)
 ZEND_END_ARG_INFO()
 
-/* {{{ proto object Win\System\Mutex->__construct()
+/* {{{ proto object Win\System\Mutex->__construct([string|Unicode name[, own[, inherit]]])
        creates a new mutex, optionally sets the owner to the thread that called it
 	   if the mutex cannot be created, will attempt to open it instead
 	   if ownership is requested, and the mutex cannot be owned this will throw an exception */
@@ -66,6 +71,7 @@ PHP_METHOD(WinSystemMutex, __construct)
 	zend_bool inherit = TRUE;
 	zend_bool own = FALSE;
 	HANDLE mutex_handle;
+	DWORD error_num;
 	zend_error_handling error_handling;
 	winsystem_mutex_object *mutex = (winsystem_mutex_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
 
@@ -90,29 +96,87 @@ PHP_METHOD(WinSystemMutex, __construct)
 	} else {
 		mutex_handle = CreateMutexA(&mutex_attributes, own, name);
 	}
-	
-	if(own && GetLastError() == ERROR_ALREADY_EXISTS) {
+	error_num = GetLastError();
+
+	if(own && error_num == ERROR_ALREADY_EXISTS) {
 		zend_throw_exception(ce_winsystem_exception, "Mutex could not be created and marked as owned", 0 TSRMLS_CC);
 		return;
 	}
 
-	/* we couldn't create it, try openmutex */
-	if (mutex_handle == NULL) {
-		if (use_unicode) {
-			mutex_handle = OpenMutexW(SYNCHRONIZE, inherit, unicode_object->unicode_string);
-		} else {
-			mutex_handle = OpenMutexA(SYNCHRONIZE, inherit, name);
-		}
-	}
-
-	/* mutex is STILL null, we couldn't create the mutex, fail */
-	if (mutex_handle == NULL) {
-		zend_throw_exception(ce_winsystem_exception, "Could not create or open the requested mutex", 0 TSRMLS_CC);
+	if(mutex_handle == NULL) {
+		winsystem_create_error(error_num, ce_winsystem_exception TSRMLS_CC);
 		return;
 	}
 
 	mutex->handle = mutex_handle;
 	mutex->is_owned = own;
+	mutex->can_inherit = inherit;
+	mutex->is_constructed = TRUE;
+	if(name) {
+		mutex->name.string = estrdup(name);
+	} else if (use_unicode) {
+		/* ref our object and store it */
+		Z_ADDREF_P(unicode);
+		mutex->name.unicode_object = unicode;
+		mutex->is_unicode = TRUE;
+	}
+}
+/* }}} */
+
+/* {{{ proto object Win\System\Mutex::open(string|Unicode name[, inherit])
+       attempts to open a new mutex */
+PHP_METHOD(WinSystemMutex, open)
+{
+	/* Used for regular string */
+	char * name = NULL;
+	int name_length;
+
+	/* Used for wchar string */
+	zval *unicode = NULL;
+	winsystem_unicode_object *unicode_object = NULL;
+	int use_unicode = 0;
+
+	/* Variables for a and w versions */
+	zend_bool inherit = TRUE;
+	HANDLE mutex_handle;
+	winsystem_mutex_object *mutex;
+	zend_error_handling error_handling;
+
+	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
+
+	/* version one, use unicode */
+	if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "O|b", &unicode, ce_winsystem_unicode, &inherit) != FAILURE) {
+		use_unicode = 1;
+		unicode_object = (winsystem_unicode_object *)zend_object_store_get_object(unicode TSRMLS_CC);
+	} else if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &name, &name_length, &inherit) == FAILURE) {
+		zend_restore_error_handling(&error_handling TSRMLS_CC);
+		return;
+	}
+	zend_restore_error_handling(&error_handling TSRMLS_CC);
+
+	object_init_ex(return_value, ce_winsystem_mutex);
+	mutex = (winsystem_mutex_object *)zend_object_store_get_object(return_value TSRMLS_CC);
+
+	if (use_unicode) {
+		mutex_handle = OpenMutexW(SYNCHRONIZE, inherit, unicode_object->unicode_string);
+	} else {
+		mutex_handle = OpenMutexA(SYNCHRONIZE, inherit, name);
+	}
+
+	/* mutex is STILL null, we couldn't create the mutex, fail */
+	if (mutex_handle == NULL) {
+		DWORD error_num = GetLastError();
+
+		if (error_num == ERROR_FILE_NOT_FOUND) {
+			zend_throw_exception(ce_winsystem_exception, "Mutex was not found and could not be opened", error_num TSRMLS_CC);
+		} else {
+			winsystem_create_error(error_num, ce_winsystem_exception TSRMLS_CC);
+		}
+		return;
+	}
+
+	mutex->handle = mutex_handle;
+	mutex->is_owned = FALSE;
 	mutex->can_inherit = inherit;
 	mutex->is_constructed = TRUE;
 	if(name) {
@@ -214,6 +278,7 @@ PHP_METHOD(WinSystemMutex, canInherit)
 /* register mutex methods */
 static zend_function_entry winsystem_mutex_functions[] = {
 	PHP_ME(WinSystemMutex, __construct, WinSystemMutex___construct_args, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
+	PHP_ME(WinSystemMutex, open, WinSystemMutex_open_args, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
 	PHP_ME(WinSystemMutex, release, WinSystemMutex_release_args, ZEND_ACC_PUBLIC)
 	PHP_ME(WinSystemMutex, isOwned, WinSystemMutex_isOwned_args, ZEND_ACC_PUBLIC)
 	PHP_ME(WinSystemMutex, getName, WinSystemMutex_getName_args, ZEND_ACC_PUBLIC)
@@ -284,6 +349,7 @@ static zend_function *winsystem_mutex_get_constructor(zval *object TSRMLS_DC)
     else
         return &winsystem_mutex_constructor_wrapper;
 }
+/* }}} */
 
 /* {{{ winsystem_mutex_object_free
        frees up the mutex handle underneath as well as any stored
@@ -341,6 +407,99 @@ static zend_object_value winsystem_mutex_object_create(zend_class_entry *ce TSRM
 }
 /* }}} */
 
+/* {{{ winsystem_mutex_object_clone
+       duplicates the internal handle object, string dups a string
+	   or add refs an object */
+static zend_object_value winsystem_mutex_object_clone(zval *this_ptr TSRMLS_DC)
+{
+	zend_object_value          retval;
+    winsystem_mutex_object     *new_mutex_object;
+	winsystem_mutex_object     *old_mutex_object = (winsystem_mutex_object *) zend_object_store_get_object(this_ptr TSRMLS_CC);
+ 
+	new_mutex_object = ecalloc(1, sizeof(winsystem_mutex_object));
+    zend_object_std_init((zend_object *) new_mutex_object, old_mutex_object->std.ce TSRMLS_CC);
+	DuplicateHandle(GetCurrentProcess(), 
+                    old_mutex_object->handle, 
+                    GetCurrentProcess(),
+                    new_mutex_object->handle, 
+                    0, /* Ignored, we're using same_access */
+                    old_mutex_object->can_inherit,
+                    DUPLICATE_SAME_ACCESS);
+
+	new_mutex_object->is_owned = old_mutex_object->is_owned;
+	new_mutex_object->can_inherit = old_mutex_object->can_inherit;
+	new_mutex_object->is_constructed = TRUE;
+	if (old_mutex_object->is_unicode) {
+		/* ref our object and store it */
+		Z_ADDREF_P(old_mutex_object->name.unicode_object);
+		new_mutex_object->name.unicode_object = old_mutex_object->name.unicode_object;
+		new_mutex_object->is_unicode = TRUE;
+	} else if (old_mutex_object->name.string) {
+		new_mutex_object->name.string = estrdup(old_mutex_object->name.string);
+	}
+ 
+    zend_hash_copy(new_mutex_object->std.properties, &(old_mutex_object->std.ce->default_properties),
+        (copy_ctor_func_t) zval_add_ref, NULL, sizeof(zval*));
+ 
+    retval.handle = zend_objects_store_put(new_mutex_object,
+        (zend_objects_store_dtor_t) zend_objects_destroy_object,
+        (zend_objects_free_object_storage_t) winsystem_mutex_object_free,
+        NULL TSRMLS_CC);
+    retval.handlers = &winsystem_mutex_object_handlers;
+
+	zend_objects_clone_members(&new_mutex_object->std, retval, zend_objects_get_address(this_ptr TSRMLS_CC), Z_OBJ_HANDLE_P(this_ptr) TSRMLS_CC);
+	return retval; 
+}
+/* }}} */
+
+/* {{{ winsystem_mutex_get_debug_info
+       pretty var_dumps  */
+static HashTable *winsystem_mutex_get_debug_info(zval *obj, int *is_temp TSRMLS_DC)
+{
+	winsystem_mutex_object *mutex = (winsystem_mutex_object *) zend_object_store_get_object(obj TSRMLS_CC);
+
+	HashTable *retval;
+	zval *tmp;
+	char *is_owned, *can_inherit, *name;
+	int is_owned_len, can_inherit_len, name_len;
+
+	ALLOC_HASHTABLE(retval);
+    zend_hash_init(retval, 1, NULL, ZVAL_PTR_DTOR, 0);
+    zend_hash_copy(retval, mutex->std.properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
+
+	zend_mangle_property_name(&is_owned, &is_owned_len, 
+		mutex->std.ce->name, mutex->std.ce->name_length, "isOwned", sizeof("isOwned") -1, 0);
+	MAKE_STD_ZVAL(tmp);
+	ZVAL_BOOL(tmp, mutex->is_owned);
+	zend_hash_update(retval, is_owned, is_owned_len + 1, &tmp, sizeof(zval*), NULL);
+    efree(is_owned);
+
+	zend_mangle_property_name(&can_inherit, &can_inherit_len, 
+	mutex->std.ce->name, mutex->std.ce->name_length, "canInherit", sizeof("canInherit") -1, 0);
+	MAKE_STD_ZVAL(tmp);
+	ZVAL_BOOL(tmp, mutex->can_inherit);
+	zend_hash_update(retval, can_inherit, can_inherit_len + 1, &tmp, sizeof(zval*), NULL);
+    efree(can_inherit);
+
+	zend_mangle_property_name(&name, &name_len, 
+	mutex->std.ce->name, mutex->std.ce->name_length, "name", sizeof("name") -1, 0);
+	if (mutex->is_unicode) {
+		/* ref our object and store it */
+		Z_ADDREF_P(mutex->name.unicode_object);
+		zend_hash_update(retval, name, name_len + 1, &mutex->name.unicode_object, sizeof(zval*), NULL);
+	} else {
+		MAKE_STD_ZVAL(tmp);
+		ZVAL_STRING(tmp, mutex->name.string, 1);
+		zend_hash_update(retval, name, name_len + 1, &tmp, sizeof(zval*), NULL);
+	}
+    efree(name);
+
+	*is_temp = 1;
+    return retval; 
+}
+/* }}} */
+
+
 /* ----------------------------------------------------------------
   Win\System\Mutex LifeCycle Functions                                                    
 ------------------------------------------------------------------*/
@@ -351,6 +510,9 @@ PHP_MINIT_FUNCTION(winsystem_mutex)
 	memcpy(&winsystem_mutex_object_handlers, zend_get_std_object_handlers(),
         sizeof winsystem_mutex_object_handlers);
     winsystem_mutex_object_handlers.get_constructor = winsystem_mutex_get_constructor;
+	winsystem_mutex_object_handlers.clone_obj = winsystem_mutex_object_clone;
+	winsystem_mutex_object_handlers.get_debug_info = winsystem_mutex_get_debug_info;
+
 	
 	INIT_NS_CLASS_ENTRY(ce, PHP_WINSYSTEM_NS, "Mutex", winsystem_mutex_functions);
 	ce_winsystem_mutex = zend_register_internal_class(&ce TSRMLS_CC);

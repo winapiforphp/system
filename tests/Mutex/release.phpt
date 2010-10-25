@@ -7,7 +7,7 @@ if(!extension_loaded('winsystem')) die('skip - winsystem extension not available
 --FILE--
 <?php
 use Win\System\Mutex;
-use Win\System\Exception;
+use Win\System\ArgumentException;
 
 // create an owned unnamed mutex
 $mutex = new Mutex(null, true);
@@ -39,7 +39,7 @@ var_dump($mutex->isOwned());
 // bad number of args
 try {
     $mutex->release(1);
-} catch (Exception $e) {
+} catch (ArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 ?>

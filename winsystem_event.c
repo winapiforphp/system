@@ -21,9 +21,7 @@
 
 ZEND_DECLARE_MODULE_GLOBALS(winsystem);
 
-/* All the classes in this file */
 zend_class_entry *ce_winsystem_event;
-
 static zend_object_handlers winsystem_event_object_handlers;
 static zend_function winsystem_event_constructor_wrapper;
 
@@ -64,7 +62,7 @@ PHP_METHOD(WinSystemEvent, __construct)
 	char * name = NULL;
 	int name_length;
 
-	/* Used for unicode string */
+	/* Used for wchar string */
 	zval *unicode = NULL;
 	winsystem_unicode_object *unicode_object = NULL;
 	int use_unicode = 0;
@@ -77,11 +75,11 @@ PHP_METHOD(WinSystemEvent, __construct)
 	zend_error_handling error_handling;
 	winsystem_event_object *event = (winsystem_event_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
 
-	zend_replace_error_handling(EH_THROW, ce_winsystem_exception, &error_handling TSRMLS_CC);
+	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
 	/* version one, use unicode */
 	if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "O|bbb", &unicode, ce_winsystem_unicode, &state, &autoreset, &inherit) != FAILURE) {
 		use_unicode = 1;
-		unicode_object = (winsystem_unicode_object *)winsystem_unicode_object_get(unicode TSRMLS_CC);
+		unicode_object = (winsystem_unicode_object *)zend_object_store_get_object(unicode TSRMLS_CC);
 	} else if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s!bbb", &name, &name_length, &state, &autoreset, &inherit) == FAILURE) {
 		zend_restore_error_handling(&error_handling TSRMLS_CC);
 		return;
@@ -92,11 +90,19 @@ PHP_METHOD(WinSystemEvent, __construct)
 	event_attributes.lpSecurityDescriptor = NULL;
 	event_attributes.bInheritHandle = inherit;
 
-	event_handle = CreateEvent(&event_attributes, state, autoreset, name);
+	if (use_unicode) {
+		event_handle = CreateEventW(&event_attributes, state, autoreset, unicode_object->unicode_string);
+	} else {
+		event_handle = CreateEventA(&event_attributes, state, autoreset, name);
+	}
 
 	/* we couldn't create it, try to open it */
 	if (event_handle == NULL) {
-		event_handle = OpenEvent(SYNCHRONIZE, inherit, name);
+		if (use_unicode) {
+			event_handle = OpenEventW(SYNCHRONIZE, inherit, unicode_object->unicode_string);
+		} else {
+			event_handle = OpenEventA(SYNCHRONIZE, inherit, name);
+		}
 	}
 
 	/* event is STILL null, we couldn't create the event, fail */
@@ -105,11 +111,16 @@ PHP_METHOD(WinSystemEvent, __construct)
 		return;
 	}
 
-	event->handle_object = event_handle;
+	event->handle = event_handle;
 	event->auto_reset = autoreset;
 	event->can_inherit = inherit;
 	if(name) {
-		event->name = estrdup(name);
+		event->name.string = estrdup(name);
+	} else if (use_unicode) {
+		/* ref our object and store it */
+		Z_ADDREF_P(unicode);
+		event->name.unicode_object = unicode;
+		event->is_unicode = TRUE;
 	}
 }
 /* }}} */
@@ -119,17 +130,19 @@ PHP_METHOD(WinSystemEvent, __construct)
 PHP_METHOD(WinSystemEvent, getName)
 {
 	zend_error_handling error_handling;
-	winsystem_event_object *event = (winsystem_event_object*)winsystem_event_object_get(getThis() TSRMLS_CC);
+	winsystem_event_object *event = (winsystem_event_object*)zend_object_store_get_object(getThis() TSRMLS_CC);
 	
-	zend_replace_error_handling(EH_THROW, ce_winsystem_exception, &error_handling TSRMLS_CC);
+	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
 	if (zend_parse_parameters_none() == FAILURE) {
 		zend_restore_error_handling(&error_handling TSRMLS_CC);
 		return;
 	}
 	zend_restore_error_handling(&error_handling TSRMLS_CC);
 
-	if (event->name) {
-		RETURN_STRING(event->name, 1)
+	if (event->is_unicode) {
+		RETURN_ZVAL(event->name.unicode_object, 1, 0);
+	} else if (event->name.string) {
+		RETURN_STRING(event->name.string, 1)
 	}
 	RETURN_NULL()
 }
@@ -140,16 +153,16 @@ PHP_METHOD(WinSystemEvent, getName)
 PHP_METHOD(WinSystemEvent, reset)
 {
 	zend_error_handling error_handling;
-	winsystem_event_object *event = (winsystem_event_object *)winsystem_event_object_get(getThis() TSRMLS_CC);
+	winsystem_event_object *event = (winsystem_event_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
 	
-	zend_replace_error_handling(EH_THROW, ce_winsystem_exception, &error_handling TSRMLS_CC);
+	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
 	if (zend_parse_parameters_none() == FAILURE) {
 		zend_restore_error_handling(&error_handling TSRMLS_CC);
 		return;
 	}
 	zend_restore_error_handling(&error_handling TSRMLS_CC);
 
-	RETURN_BOOL(ResetEvent(event->handle_object))
+	RETURN_BOOL(ResetEvent(event->handle))
 }
 /* }}} */
 
@@ -158,16 +171,16 @@ PHP_METHOD(WinSystemEvent, reset)
 PHP_METHOD(WinSystemEvent, set)
 {
 	zend_error_handling error_handling;
-	winsystem_event_object *event = (winsystem_event_object *)winsystem_event_object_get(getThis() TSRMLS_CC);
+	winsystem_event_object *event = (winsystem_event_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
 	
-	zend_replace_error_handling(EH_THROW, ce_winsystem_exception, &error_handling TSRMLS_CC);
+	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
 	if (zend_parse_parameters_none() == FAILURE) {
 		zend_restore_error_handling(&error_handling TSRMLS_CC);
 		return;
 	}
 	zend_restore_error_handling(&error_handling TSRMLS_CC);
 
-	RETURN_BOOL(SetEvent(event->handle_object))
+	RETURN_BOOL(SetEvent(event->handle))
 }
 /* }}} */
 
@@ -176,16 +189,16 @@ PHP_METHOD(WinSystemEvent, set)
 PHP_METHOD(WinSystemEvent, pulse)
 {
 	zend_error_handling error_handling;
-	winsystem_event_object *event = (winsystem_event_object *)winsystem_event_object_get(getThis() TSRMLS_CC);
+	winsystem_event_object *event = (winsystem_event_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
 	
-	zend_replace_error_handling(EH_THROW, ce_winsystem_exception, &error_handling TSRMLS_CC);
+	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
 	if (zend_parse_parameters_none() == FAILURE) {
 		zend_restore_error_handling(&error_handling TSRMLS_CC);
 		return;
 	}
 	zend_restore_error_handling(&error_handling TSRMLS_CC);
 
-	RETURN_BOOL(PulseEvent(event->handle_object))
+	RETURN_BOOL(PulseEvent(event->handle))
 }
 /* }}} */
 
@@ -194,9 +207,9 @@ PHP_METHOD(WinSystemEvent, pulse)
 PHP_METHOD(WinSystemEvent, canInherit)
 {
 	zend_error_handling error_handling;
-	winsystem_event_object *event = (winsystem_event_object *)winsystem_event_object_get(getThis() TSRMLS_CC);
+	winsystem_event_object *event = (winsystem_event_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
 	
-	zend_replace_error_handling(EH_THROW, ce_winsystem_exception, &error_handling TSRMLS_CC);
+	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
 	if (zend_parse_parameters_none() == FAILURE) {
 		zend_restore_error_handling(&error_handling TSRMLS_CC);
 		return;
@@ -212,9 +225,9 @@ PHP_METHOD(WinSystemEvent, canInherit)
 PHP_METHOD(WinSystemEvent, isAutoReset)
 {
 	zend_error_handling error_handling;
-	winsystem_event_object *event = (winsystem_event_object *)winsystem_event_object_get(getThis() TSRMLS_CC);
+	winsystem_event_object *event = (winsystem_event_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
 	
-	zend_replace_error_handling(EH_THROW, ce_winsystem_exception, &error_handling TSRMLS_CC);
+	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
 	if (zend_parse_parameters_none() == FAILURE) {
 		zend_restore_error_handling(&error_handling TSRMLS_CC);
 		return;
@@ -241,20 +254,11 @@ static zend_function_entry winsystem_event_functions[] = {
 /* ----------------------------------------------------------------
   Win\System\Event Object Magic LifeCycle Functions                                                    
 ------------------------------------------------------------------*/
-
-/* fetch the constructor call */
-static zend_function *get_constructor(zval *object TSRMLS_DC)
-{
-    if (Z_OBJCE_P(object) == ce_winsystem_event)
-        return zend_get_std_object_handlers()->
-            get_constructor(object TSRMLS_CC);
-    else
-        return &winsystem_event_constructor_wrapper;
-}
- 
-static void construction_wrapper(INTERNAL_FUNCTION_PARAMETERS) {
+/* {{{ winsystem_event_construction_wrapper
+       wraps around the constructor to make sure parent::__construct is always called  */
+static void winsystem_event_construction_wrapper(INTERNAL_FUNCTION_PARAMETERS) {
     zval *this = getThis();
-    winsystem_unicode_object *tobj;
+    winsystem_event_object *tobj;
     zend_class_entry *this_ce;
     zend_function *zf;
     zend_fcall_info fci = {0};
@@ -289,52 +293,74 @@ static void construction_wrapper(INTERNAL_FUNCTION_PARAMETERS) {
  
     zend_call_function(&fci, &fci_cache TSRMLS_CC);
     if (!EG(exception) && tobj->is_constructed == 0)
-		zend_throw_exception_ex(NULL, 0 TSRMLS_CC,
+		zend_throw_exception_ex(ce_winsystem_exception, 0 TSRMLS_CC,
 			"parent::__construct() must be called in %s::__construct()", this_ce->name);
     efree(fci.params);
     zval_ptr_dtor(&retval_ptr);
 }
+/* }}} */
 
-/* cleans up the handle object */
-static void winsystem_event_object_destructor(void *object TSRMLS_DC)
+/* {{{ winsystem_event_get_constructor
+       gets the constructor for the class  */
+static zend_function *winsystem_event_get_constructor(zval *object TSRMLS_DC)
+{
+    /* Could always return constr_wrapper_fun, but it's uncessary to call the
+     * wrapper if instantiating the superclass */
+    if (Z_OBJCE_P(object) == ce_winsystem_event)
+        return zend_get_std_object_handlers()->
+            get_constructor(object TSRMLS_CC);
+    else
+        return &winsystem_event_constructor_wrapper;
+}
+/* }}} */
+
+/* {{{ winsystem_event_object_free
+       frees up the event handle underneath as well as any stored
+	   unicode object or string name */
+static void winsystem_event_object_free(void *object TSRMLS_DC)
 {
 	winsystem_event_object *event_object = (winsystem_event_object *)object;
 
 	zend_object_std_dtor(&event_object->std TSRMLS_CC);
 
-	if(event_object->name) {
-		efree(event_object->name);
+	if (event_object->is_unicode) {
+		Z_DELREF_P(event_object->name.unicode_object);
+	} else if (event_object->name.string) {
+		efree(event_object->name.string);
 	}
-	if(event_object->handle_object != NULL){
-		CloseHandle(event_object->handle_object);
+
+	if(event_object->handle != NULL){
+		CloseHandle(event_object->handle);
 	}
 	
-	efree(object);
+	efree(event_object);
 }
 /* }}} */
 
-/* {{{ winsystem_event_object_new
-       object that has an internal HANDLE stored */
-static zend_object_value winsystem_event_object_new(zend_class_entry *ce TSRMLS_DC)
+/* {{{ winsystem_event_object_create
+       object that has an internal HANDLE stored  */
+static zend_object_value winsystem_event_object_create(zend_class_entry *ce TSRMLS_DC)
 {
-	zend_object_value retval;
-	winsystem_event_object *event_object;
-	zval *tmp;
-
-	event_object = emalloc(sizeof(winsystem_mutex_object));
-	memset(&event_object->std, 0, sizeof(zend_object));
-	event_object->handle_object = NULL;
+    zend_object_value          retval;
+    winsystem_event_object     *event_object;
+ 
+	event_object = ecalloc(1, sizeof(winsystem_event_object));
+    zend_object_std_init((zend_object *) event_object, ce TSRMLS_CC);
+	event_object->handle = NULL;
+	event_object->is_constructed = FALSE;
 	event_object->auto_reset = FALSE;
 	event_object->can_inherit = FALSE;
-	event_object->name = NULL;
-
-	zend_object_std_init(&event_object->std, ce TSRMLS_CC);
-	zend_hash_copy(event_object->std.properties, &ce->default_properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
-
-	retval.handle = zend_objects_store_put(event_object, (zend_objects_store_dtor_t)zend_objects_destroy_object, (zend_objects_free_object_storage_t) winsystem_event_object_destructor, NULL TSRMLS_CC);
-	event_object->handle = retval.handle;
-	retval.handlers = zend_get_std_object_handlers();
-	return retval;
+	event_object->is_unicode = FALSE;
+ 
+    zend_hash_copy(event_object->std.properties, &(ce->default_properties),
+        (copy_ctor_func_t) zval_add_ref, NULL, sizeof(zval*));
+ 
+    retval.handle = zend_objects_store_put(event_object,
+        (zend_objects_store_dtor_t) zend_objects_destroy_object,
+        (zend_objects_free_object_storage_t) winsystem_event_object_free,
+        NULL TSRMLS_CC);
+    retval.handlers = &winsystem_event_object_handlers;
+    return retval;
 }
 /* }}} */
 
@@ -347,11 +373,13 @@ PHP_MINIT_FUNCTION(winsystem_event)
 
 	memcpy(&winsystem_event_object_handlers, zend_get_std_object_handlers(),
         sizeof winsystem_event_object_handlers);
-    winsystem_event_object_handlers.get_constructor = get_constructor;
+    winsystem_event_object_handlers.get_constructor = winsystem_event_get_constructor;
 	
 	INIT_NS_CLASS_ENTRY(ce, PHP_WINSYSTEM_NS, "Event", winsystem_event_functions);
 	ce_winsystem_event = zend_register_internal_class(&ce TSRMLS_CC);
 	zend_class_implements(ce_winsystem_event TSRMLS_CC, 1, ce_winsystem_waitable);
+    zend_hash_apply_with_arguments(&ce_winsystem_event->function_table TSRMLS_CC, (apply_func_args_t) unset_abstract_flag, 1, ce_winsystem_waitable);
+	ce_winsystem_event->ce_flags &= ~ZEND_ACC_IMPLICIT_ABSTRACT_CLASS;
 	ce_winsystem_event->create_object = winsystem_event_object_create;
  
     winsystem_event_constructor_wrapper.type = ZEND_INTERNAL_FUNCTION;
