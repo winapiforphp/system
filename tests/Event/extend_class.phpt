@@ -17,15 +17,28 @@ class badEvent extends Event {
     }
 }
 
+class argEvent extends Event {
+    public function __construct($name) {
+        parent::__construct($name);
+    }
+}
+
 // good event is fine
 $event = new goodEvent();
 var_dump($event->getName());
 
-// bad event will fatal error
-$event = new badEvent();
+// bad semaphore will throw exception
+try {
+    $event = new badEvent();
+} catch (Exception $e) {
+    echo $e->getMessage(), "\n";
+}
+
+// arg mutex will create a new named mutex
+$event = new argEvent('foobar');
 var_dump($event->getName());
 ?>
---EXPECTF--
+--EXPECT--
 NULL
-bad
-Fatal error: Internal event handle missing in badEvent class, you must call parent::__construct in extended classes in %s on line %d
+badparent::__construct() must be called in badEvent::__construct()
+string(6) "foobar"

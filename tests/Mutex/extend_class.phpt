@@ -39,7 +39,7 @@ $mutex = new argMutex('foobar');
 var_dump($mutex->getName());
 
 ?>
---EXPECTF--
+--EXPECT--
 NULL
 parent::__construct() must be called in badMutex::__construct()
 string(6) "foobar"

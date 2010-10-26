@@ -103,8 +103,12 @@ PHP_METHOD(WinSystemMutex, __construct)
 		return;
 	}
 
-	if(mutex_handle == NULL) {
-		winsystem_create_error(error_num, ce_winsystem_exception TSRMLS_CC);
+	if (mutex_handle == NULL) {
+		if (error_num == ERROR_INVALID_HANDLE) {
+			zend_throw_exception(ce_winsystem_exception, "Name is already in use for waitable object", error_num TSRMLS_CC);
+		} else {
+			winsystem_create_error(error_num, ce_winsystem_exception TSRMLS_CC);
+		}
 		return;
 	}
 
@@ -124,7 +128,7 @@ PHP_METHOD(WinSystemMutex, __construct)
 /* }}} */
 
 /* {{{ proto object Win\System\Mutex::open(string|Unicode name[, inherit])
-       attempts to open a new mutex */
+       attempts to open an existing mutex */
 PHP_METHOD(WinSystemMutex, open)
 {
 	/* Used for regular string */

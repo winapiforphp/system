@@ -17,7 +17,14 @@ Class [ <internal:winsystem> class Win\System\Event implements Win\System\Waitab
   - Static properties [0] {
   }
 
-  - Static methods [0] {
+  - Static methods [1] {
+    Method [ <internal:winsystem> static public method open ] {
+
+      - Parameters [2] {
+        Parameter #0 [ <required> $name ]
+        Parameter #1 [ <optional> $process_inherit ]
+      }
+    }
   }
 
   - Properties [0] {
@@ -70,7 +77,7 @@ Class [ <internal:winsystem> class Win\System\Event implements Win\System\Waitab
       }
     }
 
-    Method [ <internal:winsystem, prototype Win\System\Waitable> public method wait ] {
+    Method [ <internal:winsystem, inherits Win\System\Waitable> public method wait ] {
 
       - Parameters [0] {
       }

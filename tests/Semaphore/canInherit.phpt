@@ -7,7 +7,7 @@ if(!extension_loaded('winsystem')) die('skip - winsystem extension not available
 --FILE--
 <?php
 use Win\System\Semaphore;
-use Win\System\Exception;
+use Win\System\ArgumentException;
 
 // create a normal mutex, default inherit is true
 $semaphore = new Semaphore();
@@ -24,7 +24,7 @@ var_dump($semaphore->canInherit());
 // bad number of args
 try {
     $semaphore->canInherit(1);
-} catch (Exception $e) {
+} catch (ArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 ?>

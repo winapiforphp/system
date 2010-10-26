@@ -106,11 +106,11 @@ bool(false)
 string(6) "foobar"
 bool(false)
 Mutex could not be created and marked as owned
-Could not create or open the requested event
+Name is already in use for waitable object
 bool(true)
 bool(false)
 Mutex could not be created and marked as owned
-Could not create or open the requested event
+Name is already in use for waitable object
 string(5) "silly"
 bool(true)
 NULL

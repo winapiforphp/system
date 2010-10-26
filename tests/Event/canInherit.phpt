@@ -7,7 +7,7 @@ if(!extension_loaded('winsystem')) die('skip - winsystem extension not available
 --FILE--
 <?php
 use Win\System\Event;
-use Win\System\Exception;
+use Win\System\ArgumentException;
 
 // create a normal event, default inherit is true
 $event = new Event();
@@ -24,7 +24,7 @@ var_dump($event->canInherit());
 // bad number of args
 try {
     $event->canInherit(1);
-} catch (Exception $e) {
+} catch (ArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 ?>

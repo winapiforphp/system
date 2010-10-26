@@ -70,7 +70,6 @@ typedef struct _winsystem_semaphore_object {
 	zend_object    std;
 	zend_bool      is_constructed;
 	HANDLE         handle;
-	long           count;
 	long           max_count;
 	BOOL           can_inherit;
 	zend_bool      is_unicode;

@@ -7,7 +7,7 @@ if(!extension_loaded('winsystem')) die('skip - winsystem extension not available
 --FILE--
 <?php
 use Win\System\Event;
-use Win\System\Exception;
+use Win\System\ArgumentException;
 
 // create an Event
 $event = new Event();
@@ -21,7 +21,7 @@ var_dump($event->set());
 // bad number of args
 try {
     $event->set(1);
-} catch (Exception $e) {
+} catch (ArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 ?>

@@ -17,13 +17,20 @@ Class [ <internal:winsystem> class Win\System\Semaphore implements Win\System\Wa
   - Static properties [0] {
   }
 
-  - Static methods [0] {
+  - Static methods [1] {
+    Method [ <internal:winsystem> static public method open ] {
+
+      - Parameters [2] {
+        Parameter #0 [ <required> $name ]
+        Parameter #1 [ <optional> $process_inherit ]
+      }
+    }
   }
 
   - Properties [0] {
   }
 
-  - Methods [7] {
+  - Methods [6] {
     Method [ <internal:winsystem, ctor> public method __construct ] {
 
       - Parameters [4] {
@@ -35,12 +42,6 @@ Class [ <internal:winsystem> class Win\System\Semaphore implements Win\System\Wa
     }
 
     Method [ <internal:winsystem> public method release ] {
-
-      - Parameters [0] {
-      }
-    }
-
-    Method [ <internal:winsystem> public method getCount ] {
 
       - Parameters [0] {
       }
@@ -64,7 +65,7 @@ Class [ <internal:winsystem> class Win\System\Semaphore implements Win\System\Wa
       }
     }
 
-    Method [ <internal:winsystem, prototype Win\System\Waitable> public method wait ] {
+    Method [ <internal:winsystem, inherits Win\System\Waitable> public method wait ] {
 
       - Parameters [0] {
       }

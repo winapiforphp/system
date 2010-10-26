@@ -17,15 +17,28 @@ class badSem extends Semaphore {
     }
 }
 
+class argSemaphore extends Semaphore {
+    public function __construct($name) {
+        parent::__construct($name);
+    }
+}
+
 // good semaphore is fine
 $semaphore = new goodSem();
 var_dump($semaphore->getName());
 
-// bad semaphore will fatal error
-$semaphore = new badSem();
+// bad semaphore will throw exception
+try {
+    $semaphore = new badSem();
+} catch (Exception $e) {
+    echo $e->getMessage(), "\n";
+}
+
+// arg mutex will create a new named mutex
+$semaphore = new argSemaphore('foobar');
 var_dump($semaphore->getName());
 ?>
---EXPECTF--
+--EXPECT--
 NULL
-bad
-Fatal error: Internal semaphore handle missing in badSem class, you must call parent::__construct in extended classes in %s on line %d
+badparent::__construct() must be called in badSem::__construct()
+string(6) "foobar"
