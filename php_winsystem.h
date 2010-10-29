@@ -170,8 +170,8 @@ static inline void winsystem_register_prop_handler(HashTable *prop_handlers, zen
     handler.read_func  = read_func;
     handler.write_func = write_func;
 
-    zend_hash_add(prop_handlers, prop_name, sizeof(prop_name) - 1, &handler, sizeof(winsystem_prop_handler), NULL);
-    zend_declare_property_null(ce, prop_name, sizeof(prop_name) - 1, ZEND_ACC_PUBLIC TSRMLS_CC);
+    zend_hash_add(prop_handlers, prop_name, sizeof(prop_name) + 1, &handler, sizeof(winsystem_prop_handler), NULL);
+    zend_declare_property_null(ce, prop_name, sizeof(prop_name), ZEND_ACC_PUBLIC TSRMLS_CC);
 }
 
 /* ----------------------------------------------------------------
