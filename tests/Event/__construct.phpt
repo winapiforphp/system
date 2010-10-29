@@ -47,7 +47,6 @@ var_dump($event->getName());
 // named event is autoreset
 $event = new Event('foo', null, true);
 var_dump($event->getName());
-var_dump($event->isAutoReset());
 
 // named event can inherit
 $event = new Event('bar', null, false, true);
@@ -89,7 +88,7 @@ try {
     echo $e->getMessage(), "\n";
 }
 ?>
---EXPECTF--
+--EXPECT--
 NULL
 string(6) "foobar"
 Name is already in use for waitable object
@@ -97,7 +96,6 @@ bool(true)
 Name is already in use for waitable object
 string(5) "silly"
 string(3) "foo"
-bool(true)
 string(3) "bar"
 bool(true)
 Win\System\Event::__construct() expects at most 4 parameters, 5 given

@@ -18,8 +18,7 @@
 
 #include "php_winsystem.h"
 #include "zend_exceptions.h"
-
-ZEND_DECLARE_MODULE_GLOBALS(winsystem);
+#include "implement_waitable.h"
 
 zend_class_entry *ce_winsystem_semaphore;
 static zend_object_handlers winsystem_semaphore_object_handlers;
@@ -300,6 +299,9 @@ static zend_function_entry winsystem_semaphore_functions[] = {
 	PHP_ME(WinSystemSemaphore, getMaxCount, WinSystemSemaphore_getMaxCount_args, ZEND_ACC_PUBLIC)
 	PHP_ME(WinSystemSemaphore, getName, WinSystemSemaphore_getName_args, ZEND_ACC_PUBLIC)
 	PHP_ME(WinSystemSemaphore, canInherit, WinSystemSemaphore_canInherit_args, ZEND_ACC_PUBLIC)
+	PHP_ME(WinSystemWaitable, wait, WinSystemWaitable_wait_args, ZEND_ACC_PUBLIC)
+	PHP_ME(WinSystemWaitable, waitMsg, WinSystemWaitable_waitMsg_args, ZEND_ACC_PUBLIC)
+	PHP_ME(WinSystemWaitable, signalAndWait, WinSystemWaitable_signalAndWait_args, ZEND_ACC_PUBLIC)
 	{NULL, NULL, NULL}
 };
 /* }}} */
@@ -527,8 +529,6 @@ PHP_MINIT_FUNCTION(winsystem_semaphore)
 	INIT_NS_CLASS_ENTRY(ce, PHP_WINSYSTEM_NS, "Semaphore", winsystem_semaphore_functions);
 	ce_winsystem_semaphore = zend_register_internal_class(&ce TSRMLS_CC);
 	zend_class_implements(ce_winsystem_semaphore TSRMLS_CC, 1, ce_winsystem_waitable);
-    zend_hash_apply_with_arguments(&ce_winsystem_semaphore->function_table TSRMLS_CC, (apply_func_args_t) unset_abstract_flag, 1, ce_winsystem_waitable);
-	ce_winsystem_semaphore->ce_flags &= ~ZEND_ACC_IMPLICIT_ABSTRACT_CLASS;
 	ce_winsystem_semaphore->create_object = winsystem_semaphore_object_create;
 
 	winsystem_semaphore_constructor_wrapper.type = ZEND_INTERNAL_FUNCTION;

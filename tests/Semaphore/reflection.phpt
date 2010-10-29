@@ -30,7 +30,7 @@ Class [ <internal:winsystem> class Win\System\Semaphore implements Win\System\Wa
   - Properties [0] {
   }
 
-  - Methods [6] {
+  - Methods [8] {
     Method [ <internal:winsystem, ctor> public method __construct ] {
 
       - Parameters [4] {
@@ -65,9 +65,29 @@ Class [ <internal:winsystem> class Win\System\Semaphore implements Win\System\Wa
       }
     }
 
-    Method [ <internal:winsystem, inherits Win\System\Waitable> public method wait ] {
+    Method [ <internal:winsystem, prototype Win\System\Waitable> public method wait ] {
 
-      - Parameters [0] {
+      - Parameters [2] {
+        Parameter #0 [ <optional> $milliseconds ]
+        Parameter #1 [ <optional> $alertable ]
+      }
+    }
+
+    Method [ <internal:winsystem, prototype Win\System\Waitable> public method waitMsg ] {
+
+      - Parameters [3] {
+        Parameter #0 [ <optional> $milliseconds ]
+        Parameter #1 [ <optional> $mask ]
+        Parameter #2 [ <optional> $alertable ]
+      }
+    }
+
+    Method [ <internal:winsystem, prototype Win\System\Waitable> public method signalAndWait ] {
+
+      - Parameters [3] {
+        Parameter #0 [ <required> $signal ]
+        Parameter #1 [ <optional> $milliseconds ]
+        Parameter #2 [ <optional> $alertable ]
       }
     }
   }

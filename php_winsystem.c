@@ -27,14 +27,15 @@ ZEND_DECLARE_MODULE_GLOBALS(winsystem);
 PHP_MINIT_FUNCTION(winsystem)
 {
 	PHP_MINIT(winsystem_util)(INIT_FUNC_ARGS_PASSTHRU);
+	PHP_MINIT(winsystem_unicode)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(winsystem_waitable)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(winsystem_mutex)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(winsystem_semaphore)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(winsystem_event)(INIT_FUNC_ARGS_PASSTHRU);
 	//PHP_MINIT(winsystem_timer)(INIT_FUNC_ARGS_PASSTHRU);
-	PHP_MINIT(winsystem_unicode)(INIT_FUNC_ARGS_PASSTHRU);
 #ifdef ZTS
-	//PHP_MINIT(winsystem_thread)(INIT_FUNC_ARGS_PASSTHRU);
+	//PHP_MINIT(winsystem_timerqueue)(INIT_FUNC_ARGS_PASSTHRU);
+	PHP_MINIT(winsystem_thread)(INIT_FUNC_ARGS_PASSTHRU);
 #endif
 	return SUCCESS;
 }
@@ -43,7 +44,7 @@ PHP_MINIT_FUNCTION(winsystem)
 PHP_MSHUTDOWN_FUNCTION(winsystem)
 {
 #ifdef ZTS
-	//PHP_MSHUTDOWN(winsystem_thread)(INIT_FUNC_ARGS_PASSTHRU);
+	PHP_MSHUTDOWN(winsystem_thread)(INIT_FUNC_ARGS_PASSTHRU);
 	ts_free_id(winsystem_globals_id);
 #endif
 	return SUCCESS;
@@ -63,8 +64,8 @@ static void winsystem_finish_thread(void *data)
 	efree(thread_data->classname);
 	thread_data->parent_tsrmls = NULL;
 	thread_data->child_tsrmls = NULL;
-	/* Apparently the linked list does the efree for me
-	efree(thread_data); */
+	/* Apparently the linked list does the efree for me 
+	efree(thread_data);*/
 }
 
 /* initialize the thread list */
@@ -86,20 +87,6 @@ PHP_RSHUTDOWN_FUNCTION(winsystem)
 	zend_llist_destroy(&WINSYSTEM_G(processes)); 
 #endif
 	return SUCCESS;
-}
-
-/* dirty hack so interfaces can have the definitions of their functions */
-int unset_abstract_flag(zend_function *func TSRMLS_DC, int num_args, va_list args, zend_hash_key *hash_key)
-{
-    zend_class_entry *iface_ce = va_arg(args, zend_class_entry *);
-
-    if (func->type == ZEND_INTERNAL_FUNCTION) {
-        if (zend_hash_quick_exists(&iface_ce->function_table, hash_key->arKey, hash_key->nKeyLength, hash_key->h)) {
-            ((zend_internal_function*)func)->fn_flags &= ~ZEND_ACC_ABSTRACT;
-        }
-    }
-
-    return ZEND_HASH_APPLY_KEEP;
 }
 
 /* Module entry for winsystem */

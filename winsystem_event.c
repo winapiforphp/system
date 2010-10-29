@@ -18,8 +18,7 @@
 
 #include "php_winsystem.h"
 #include "zend_exceptions.h"
-
-ZEND_DECLARE_MODULE_GLOBALS(winsystem);
+#include "implement_waitable.h"
 
 zend_class_entry *ce_winsystem_event;
 static zend_object_handlers winsystem_event_object_handlers;
@@ -48,9 +47,6 @@ ZEND_BEGIN_ARG_INFO(WinSystemEvent_set_args, ZEND_SEND_BY_VAL)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO(WinSystemEvent_pulse_args, ZEND_SEND_BY_VAL)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO(WinSystemEvent_isAutoReset_args, ZEND_SEND_BY_VAL)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO(WinSystemEvent_getName_args, ZEND_SEND_BY_VAL)
@@ -114,7 +110,6 @@ PHP_METHOD(WinSystemEvent, __construct)
 	}
 
 	event->handle = event_handle;
-	event->auto_reset = autoreset;
 	event->can_inherit = inherit;
 	event->is_constructed = TRUE;
 	if(name) {
@@ -180,7 +175,6 @@ PHP_METHOD(WinSystemEvent, open)
 	}
 
 	event->handle = event_handle;
-	event->auto_reset = FALSE;
 	event->can_inherit = inherit;
 	event->is_constructed = TRUE;
 	if(name) {
@@ -289,24 +283,6 @@ PHP_METHOD(WinSystemEvent, canInherit)
 }
 /* }}} */
 
-/* {{{ proto bool Win\System\Event->isAutoReset()
-      if a event was created with the autoreset flag, meaning the event is automatically reset */
-PHP_METHOD(WinSystemEvent, isAutoReset)
-{
-	zend_error_handling error_handling;
-	winsystem_event_object *event = (winsystem_event_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
-	
-	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters_none() == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
-		return;
-	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
-
-	RETURN_BOOL(event->auto_reset)
-}
-/* }}} */
-
 /* register event methods */
 static zend_function_entry winsystem_event_functions[] = {
 	PHP_ME(WinSystemEvent, __construct, WinSystemEvent___construct_args, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
@@ -316,7 +292,9 @@ static zend_function_entry winsystem_event_functions[] = {
 	PHP_ME(WinSystemEvent, pulse, WinSystemEvent_pulse_args, ZEND_ACC_PUBLIC)
 	PHP_ME(WinSystemEvent, getName, WinSystemEvent_getName_args, ZEND_ACC_PUBLIC)
 	PHP_ME(WinSystemEvent, canInherit, WinSystemEvent_canInherit_args, ZEND_ACC_PUBLIC)
-	PHP_ME(WinSystemEvent, isAutoReset, WinSystemEvent_isAutoReset_args, ZEND_ACC_PUBLIC)
+	PHP_ME(WinSystemWaitable, wait, WinSystemWaitable_wait_args, ZEND_ACC_PUBLIC)
+	PHP_ME(WinSystemWaitable, waitMsg, WinSystemWaitable_waitMsg_args, ZEND_ACC_PUBLIC)
+	PHP_ME(WinSystemWaitable, signalAndWait, WinSystemWaitable_signalAndWait_args, ZEND_ACC_PUBLIC)
 	{NULL, NULL, NULL}
 };
 /* }}} */
@@ -418,7 +396,6 @@ static zend_object_value winsystem_event_object_create(zend_class_entry *ce TSRM
     zend_object_std_init((zend_object *) event_object, ce TSRMLS_CC);
 	event_object->handle = NULL;
 	event_object->is_constructed = FALSE;
-	event_object->auto_reset = FALSE;
 	event_object->can_inherit = FALSE;
 	event_object->is_unicode = FALSE;
  
@@ -453,7 +430,6 @@ static zend_object_value winsystem_event_object_clone(zval *this_ptr TSRMLS_DC)
                     old_event_object->can_inherit,
                     DUPLICATE_SAME_ACCESS);
 
-	new_event_object->auto_reset = old_event_object->auto_reset;
 	new_event_object->can_inherit = old_event_object->can_inherit;
 	new_event_object->is_constructed = TRUE;
 
@@ -488,19 +464,12 @@ static HashTable *winsystem_event_get_debug_info(zval *obj, int *is_temp TSRMLS_
 
 	HashTable *retval;
 	zval *tmp;
-	char *auto_reset, *can_inherit, *name;
-	int auto_reset_len, can_inherit_len, name_len;
+	char *can_inherit, *name;
+	int can_inherit_len, name_len;
 
 	ALLOC_HASHTABLE(retval);
     zend_hash_init(retval, 1, NULL, ZVAL_PTR_DTOR, 0);
     zend_hash_copy(retval, event->std.properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
-
-	zend_mangle_property_name(&auto_reset, &auto_reset_len, 
-		event->std.ce->name, event->std.ce->name_length, "autoReset", sizeof("autoReset") -1, 0);
-	MAKE_STD_ZVAL(tmp);
-	ZVAL_BOOL(tmp, event->auto_reset);
-	zend_hash_update(retval, auto_reset, auto_reset_len + 1, &tmp, sizeof(zval*), NULL);
-    efree(auto_reset);
 
 	zend_mangle_property_name(&can_inherit, &can_inherit_len, 
 	event->std.ce->name, event->std.ce->name_length, "canInherit", sizeof("canInherit") -1, 0);
@@ -543,8 +512,6 @@ PHP_MINIT_FUNCTION(winsystem_event)
 	INIT_NS_CLASS_ENTRY(ce, PHP_WINSYSTEM_NS, "Event", winsystem_event_functions);
 	ce_winsystem_event = zend_register_internal_class(&ce TSRMLS_CC);
 	zend_class_implements(ce_winsystem_event TSRMLS_CC, 1, ce_winsystem_waitable);
-    zend_hash_apply_with_arguments(&ce_winsystem_event->function_table TSRMLS_CC, (apply_func_args_t) unset_abstract_flag, 1, ce_winsystem_waitable);
-	ce_winsystem_event->ce_flags &= ~ZEND_ACC_IMPLICIT_ABSTRACT_CLASS;
 	ce_winsystem_event->create_object = winsystem_event_object_create;
  
     winsystem_event_constructor_wrapper.type = ZEND_INTERNAL_FUNCTION;
