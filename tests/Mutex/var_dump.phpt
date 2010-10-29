@@ -24,25 +24,19 @@ $mutex = new Mutex($unicode);
 var_dump($mutex);
 ?>
 --EXPECTF--
-object(Win\System\Mutex)#%d (3) {
-  ["isOwned":"Win\System\Mutex":private]=>
-  bool(false)
+object(Win\System\Mutex)#%d (2) {
   ["canInherit":"Win\System\Mutex":private]=>
   bool(true)
   ["name":"Win\System\Mutex":private]=>
   string(5) "clone"
 }
-object(Win\System\Mutex)#%d (3) {
-  ["isOwned":"Win\System\Mutex":private]=>
-  bool(true)
+object(Win\System\Mutex)#%d (2) {
   ["canInherit":"Win\System\Mutex":private]=>
   bool(true)
   ["name":"Win\System\Mutex":private]=>
   string(6) "foobar"
 }
-object(Win\System\Mutex)#%d (3) {
-  ["isOwned":"Win\System\Mutex":private]=>
-  bool(false)
+object(Win\System\Mutex)#%d (2) {
   ["canInherit":"Win\System\Mutex":private]=>
   bool(true)
   ["name":"Win\System\Mutex":private]=>

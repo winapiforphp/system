@@ -18,12 +18,12 @@
 
 #ifndef PHP_WINSYSTEM_H
 #define PHP_WINSYSTEM_H
+
 /* version info file */
 #include "winsystem_version.h"
 
 /* Needed PHP includes */
 #include "php.h"
-#include <Windows.h>
 
 #ifdef PHP_WIN32
 #define PHP_WINSYSTEM_API __declspec(dllexport)
@@ -62,12 +62,18 @@ typedef struct _winsystem_unicode_object {
 	CHAR *       multibyte_string;
 } winsystem_unicode_object;
 
+/* waitable object */
+typedef struct _winsystem_waitable_object {
+	zend_object  std;
+	zend_bool    is_constructed;
+	HANDLE       handle;
+} winsystem_waitable_object;
+
 /* mutex object */
 typedef struct _winsystem_mutex_object {
 	zend_object    std;
 	zend_bool      is_constructed;
 	HANDLE         handle;
-	BOOL           is_owned;
 	BOOL           can_inherit;
 	zend_bool      is_unicode;
 	winsystem_name name;
@@ -89,7 +95,6 @@ typedef struct _winsystem_event_object {
 	zend_object    std;
 	zend_bool      is_constructed;
 	HANDLE         handle;
-	BOOL           auto_reset;
 	BOOL           can_inherit;
 	zend_bool      is_unicode;
 	winsystem_name name;
@@ -100,10 +105,22 @@ typedef struct _winsystem_timer_object {
 	zend_object    std;
 	zend_bool      is_constructed;
 	HANDLE         handle;
-	BOOL           auto_reset;
 	BOOL           can_inherit;
 	winsystem_name name;
 } winsystem_timer_object;
+
+#ifdef ZTS
+
+/* timerqueue object */
+typedef struct _winsystem_timerqueue_object {
+	zend_object    std;
+	zend_bool      is_constructed;
+	HANDLE         handle;
+	zval           *event;
+	HashTable	   *timers;
+} winsystem_timerqueue_object;
+
+
 
 /* Data structure for threads information */
 typedef struct _winsystem_thread_data {
@@ -117,6 +134,8 @@ typedef struct _winsystem_thread_data {
 	void *** child_tsrmls;
 	char *   classname;
 	int      classlen;
+	zend_uint param_count;
+	zval ***params;
 } winsystem_thread_data;
 
 /* thread object */
@@ -125,6 +144,8 @@ typedef struct _winsystem_thread_object {
 	zend_bool    is_constructed;
 	HANDLE       handle;
 } winsystem_thread_object;
+
+#endif
 
 /* Property read/write callbacks */
 typedef int (* winsystem_prop_read_t) (winsystem_generic_object *object, zval *member, zval **retval TSRMLS_DC);
@@ -148,6 +169,7 @@ extern PHP_WINSYSTEM_API CHAR * win_system_convert_to_char(const WCHAR ** utf16_
 /* ----------------------------------------------------------------
   Class Entries                                              
 ------------------------------------------------------------------*/
+extern zend_class_entry *ce_winsystem_event;
 extern zend_class_entry *ce_winsystem_waitable;
 extern zend_class_entry *ce_winsystem_exception;
 extern zend_class_entry *ce_winsystem_argexception;
@@ -155,10 +177,6 @@ extern zend_class_entry *ce_winsystem_versionexception;
 
 extern zend_class_entry *ce_winsystem_service_controller;
 
-/* ----------------------------------------------------------------
-  Internal APIs                                              
-------------------------------------------------------------------*/
-extern int unset_abstract_flag(zend_function *func TSRMLS_DC, int num_args, va_list args, zend_hash_key *hash_key);
 extern zend_object_handlers winsystem_object_handlers;
 
 /* Registers the read and write handlers for a class's property */
@@ -196,6 +214,7 @@ PHP_MINIT_FUNCTION(winsystem_mutex);
 PHP_MINIT_FUNCTION(winsystem_semaphore);
 PHP_MINIT_FUNCTION(winsystem_event);
 PHP_MINIT_FUNCTION(winsystem_timer);
+PHP_MINIT_FUNCTION(winsystem_timerqueue);
 PHP_MINIT_FUNCTION(winsystem_thread);
 PHP_MINIT_FUNCTION(winsystem_unicode);
 PHP_MINIT_FUNCTION(winsystem_service);

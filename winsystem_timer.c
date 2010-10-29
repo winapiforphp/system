@@ -16,25 +16,14 @@
   +----------------------------------------------------------------------+
 */
 
-/* $Id$ */
-
 #include "php_winsystem.h"
 #include "zend_exceptions.h"
 
 ZEND_DECLARE_MODULE_GLOBALS(winsystem);
 
-/* All the classes in this file */
 zend_class_entry *ce_winsystem_timer;
-
-static inline winsystem_timer_object* winsystem_timer_object_get(zval *zobj TSRMLS_DC)
-{
-    winsystem_timer_object *pobj = zend_object_store_get_object(zobj TSRMLS_CC);
-    if (pobj->handle_object == NULL) {
-		php_error(E_ERROR, "Internal timer handle missing in %s class, you must call parent::__construct in extended classes", Z_OBJCE_P(zobj)->name);
-		return NULL;
-    }
-    return pobj;
-}
+static zend_object_handlers winsystem_timer_object_handlers;
+static zend_function winsystem_timer_constructor_wrapper;
 
 /* ----------------------------------------------------------------
   Win\System\Timer Userland API                                                    
@@ -42,6 +31,11 @@ static inline winsystem_timer_object* winsystem_timer_object_get(zval *zobj TSRM
 ZEND_BEGIN_ARG_INFO_EX(WinSystemTimer___construct_args, ZEND_SEND_BY_VAL, ZEND_RETURN_VALUE, 0)
 	ZEND_ARG_INFO(0, name)
 	ZEND_ARG_INFO(0, auto_reset)
+    ZEND_ARG_INFO(0, process_inherit)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(WinSystemTimer_open_args, ZEND_SEND_BY_VAL, ZEND_RETURN_VALUE, 1)
+	ZEND_ARG_INFO(0, name)
     ZEND_ARG_INFO(0, process_inherit)
 ZEND_END_ARG_INFO()
 
@@ -70,17 +64,28 @@ ZEND_END_ARG_INFO()
        creates a new timer */
 PHP_METHOD(WinSystemTimer, __construct)
 {
+	/* Used for regular string */
+	char * name = NULL;
+	int name_length;
+
+	/* Used for wchar string */
+	zval *unicode = NULL;
+	winsystem_unicode_object *unicode_object = NULL;
+	int use_unicode = 0;
+
 	SECURITY_ATTRIBUTES timer_attributes;
 	zend_bool inherit = TRUE;
 	zend_bool autoreset = TRUE;
-	char * name = NULL;
-	int name_length;
 	HANDLE timer_handle;
 	zend_error_handling error_handling;
 	winsystem_timer_object *timer = (winsystem_timer_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
 
-	zend_replace_error_handling(EH_THROW, ce_winsystem_exception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s!bb", &name, &name_length, &autoreset, &inherit) == FAILURE) {
+	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
+	/* version one, use unicode */
+	if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "O|bb", &unicode, ce_winsystem_unicode, &autoreset, &inherit) != FAILURE) {
+		use_unicode = 1;
+		unicode_object = (winsystem_unicode_object *)zend_object_store_get_object(unicode TSRMLS_CC);
+	} else if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s!bb", &name, &name_length, &autoreset, &inherit) == FAILURE) {
 		zend_restore_error_handling(&error_handling TSRMLS_CC);
 		return;
 	}
@@ -90,11 +95,10 @@ PHP_METHOD(WinSystemTimer, __construct)
 	timer_attributes.lpSecurityDescriptor = NULL;
 	timer_attributes.bInheritHandle = inherit;
 
-	timer_handle = CreateWaitableTimer(&timer_attributes, autoreset, name);
-
-	/* we couldn't create it, try to open it */
-	if (timer_handle == NULL) {
-		timer_handle = OpenWaitableTimer(SYNCHRONIZE | TIMER_MODIFY_STATE, inherit, name);
+	if (use_unicode) {
+		timer_handle = CreateWaitableTimerW(&timer_attributes, autoreset, unicode_object->unicode_string);
+	} else {
+		timer_handle = CreateWaitableTimerA(&timer_attributes, autoreset, name);
 	}
 
 	/* timer is STILL null, we couldn't create the timer, fail */

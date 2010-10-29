@@ -11,6 +11,12 @@ use Win\System\Thread;
 use Win\System\Mutex;
 use Win\System\Event;
 
+class TestSubThread extends Thread {
+    function run() {
+        echo "subthread is doing work\n";
+    }
+}
+
 /* To create a thread, extend the thread class and
   implement the run method */
 class TestThread extends Thread {
@@ -36,12 +42,16 @@ class TestThread extends Thread {
 
         // get our global variable
         $count = Thread::get('count');
+        echo "Our global count was $count \n";
         $count += 1;
         // increment and set it
         Thread::set('count', $count);
         // echo it
         echo "Our global count is $count \n";
         $event->set();
+
+        //$thread = new TestSubThread();
+        //$thread->run();
     }
 
     function foobar() {
@@ -56,6 +66,8 @@ Thread::set('count', 0);
   in the current thread, and the thread object that can
   be accessed in $this in the run method */
 $thread = new TestThread();
-
-$thread->run();
+$thread->start();
+$thread->start();
+$thread->start();
+$thread->start();
 echo "Done\n";

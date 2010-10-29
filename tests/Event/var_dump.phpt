@@ -24,28 +24,22 @@ $event = new Event($unicode);
 var_dump($event);
 ?>
 --EXPECTF--
-object(Win\System\Event)#%d (3) {
-  ["autoReset":"Win\System\Event":private]=>
-  bool(true)
+object(Win\System\Event)#%d (2) {
   ["canInherit":"Win\System\Event":private]=>
   bool(true)
   ["name":"Win\System\Event":private]=>
   string(5) "clone"
 }
-object(Win\System\Event)#%d (3) {
-  ["autoReset":"Win\System\Event":private]=>
-  bool(true)
+object(Win\System\Event)#%d (2) {
   ["canInherit":"Win\System\Event":private]=>
   bool(true)
   ["name":"Win\System\Event":private]=>
   string(6) "foobar"
 }
-object(Win\System\Event)#%d (3) {
-  ["autoReset":"Win\System\Event":private]=>
-  bool(true)
+object(Win\System\Event)#%d (2) {
   ["canInherit":"Win\System\Event":private]=>
   bool(true)
   ["name":"Win\System\Event":private]=>
-  object(Win\System\Unicode)#1 (0) {
+  object(Win\System\Unicode)#%d (0) {
   }
 }

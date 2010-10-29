@@ -30,7 +30,7 @@ Class [ <internal:winsystem> class Win\System\Event implements Win\System\Waitab
   - Properties [0] {
   }
 
-  - Methods [8] {
+  - Methods [9] {
     Method [ <internal:winsystem, ctor> public method __construct ] {
 
       - Parameters [4] {
@@ -71,15 +71,29 @@ Class [ <internal:winsystem> class Win\System\Event implements Win\System\Waitab
       }
     }
 
-    Method [ <internal:winsystem> public method isAutoReset ] {
+    Method [ <internal:winsystem, prototype Win\System\Waitable> public method wait ] {
 
-      - Parameters [0] {
+      - Parameters [2] {
+        Parameter #0 [ <optional> $milliseconds ]
+        Parameter #1 [ <optional> $alertable ]
       }
     }
 
-    Method [ <internal:winsystem, inherits Win\System\Waitable> public method wait ] {
+    Method [ <internal:winsystem, prototype Win\System\Waitable> public method waitMsg ] {
 
-      - Parameters [0] {
+      - Parameters [3] {
+        Parameter #0 [ <optional> $milliseconds ]
+        Parameter #1 [ <optional> $mask ]
+        Parameter #2 [ <optional> $alertable ]
+      }
+    }
+
+    Method [ <internal:winsystem, prototype Win\System\Waitable> public method signalAndWait ] {
+
+      - Parameters [3] {
+        Parameter #0 [ <required> $signal ]
+        Parameter #1 [ <optional> $milliseconds ]
+        Parameter #2 [ <optional> $alertable ]
       }
     }
   }
