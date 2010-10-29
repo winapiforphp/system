@@ -27,6 +27,7 @@ ZEND_DECLARE_MODULE_GLOBALS(winsystem);
 zend_class_entry *ce_winsystem_exception;
 zend_class_entry *ce_winsystem_argexception;
 zend_class_entry *ce_winsystem_versionexception;
+zend_object_handlers winsystem_object_handlers;
 
 /* {{{ winsystem_create_error - grabs a message from GetLastError int and throws an exception with it */
 void winsystem_create_error(int error, zend_class_entry *ce TSRMLS_DC)
