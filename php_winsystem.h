@@ -18,12 +18,12 @@
 
 #ifndef PHP_WINSYSTEM_H
 #define PHP_WINSYSTEM_H
-
 /* version info file */
 #include "winsystem_version.h"
 
 /* Needed PHP includes */
 #include "php.h"
+#include <Windows.h>
 
 #ifdef PHP_WIN32
 #define PHP_WINSYSTEM_API __declspec(dllexport)
@@ -39,6 +39,14 @@
   Typedefs                                               
 ------------------------------------------------------------------*/
 #define PHP_WINSYSTEM_NS ZEND_NS_NAME("Win", "System")
+#define PHP_WINSYSTEM_SERVICE_NS ZEND_NS_NAME(PHP_WINSYSTEM_NS, "Service")
+
+/* Generic object - all object's that want sexy property read/write callbacks should have this header */
+typedef struct _winsystem_generic_object {
+    zend_object        std;
+    zend_object_handle zobject_handle;
+    HashTable          *prop_handler;
+} winsystem_generic_object;
 
 /* Names in most things can be either a string or unicode object */
 typedef union _winsystem_name {
@@ -118,6 +126,16 @@ typedef struct _winsystem_thread_object {
 	HANDLE       handle;
 } winsystem_thread_object;
 
+/* Property read/write callbacks */
+typedef int (* winsystem_prop_read_t) (winsystem_generic_object *object, zval *member, zval **retval TSRMLS_DC);
+typedef int (* winsystem_prop_write_t)(winsystem_generic_object *object, zval *member, zval *value TSRMLS_DC);
+
+/* Container for read/write callback */
+typedef struct _winsystem_prop_handler {
+    winsystem_prop_read_t  read_func;
+    winsystem_prop_write_t write_func;
+} winsystem_prop_handler;
+
 /* ----------------------------------------------------------------
   Exported C API                                            
 ------------------------------------------------------------------*/
@@ -135,10 +153,26 @@ extern zend_class_entry *ce_winsystem_exception;
 extern zend_class_entry *ce_winsystem_argexception;
 extern zend_class_entry *ce_winsystem_versionexception;
 
+extern zend_class_entry *ce_winsystem_service_controller;
+
 /* ----------------------------------------------------------------
   Internal APIs                                              
 ------------------------------------------------------------------*/
 extern int unset_abstract_flag(zend_function *func TSRMLS_DC, int num_args, va_list args, zend_hash_key *hash_key);
+extern zend_object_handlers winsystem_object_handlers;
+
+/* Registers the read and write handlers for a class's property */
+static inline void winsystem_register_prop_handler(HashTable *prop_handlers, zend_class_entry *ce, char *prop_name, 
+                                                   winsystem_prop_read_t read_func, winsystem_prop_write_t write_func TSRMLS_DC)
+{
+    winsystem_prop_handler handler;
+
+    handler.read_func  = read_func;
+    handler.write_func = write_func;
+
+    zend_hash_add(prop_handlers, prop_name, sizeof(prop_name) - 1, &handler, sizeof(winsystem_prop_handler), NULL);
+    zend_declare_property_null(ce, prop_name, sizeof(prop_name) - 1, ZEND_ACC_PUBLIC TSRMLS_CC);
+}
 
 /* ----------------------------------------------------------------
   Object Globals, lifecycle and static linking                                                
@@ -164,6 +198,8 @@ PHP_MINIT_FUNCTION(winsystem_event);
 PHP_MINIT_FUNCTION(winsystem_timer);
 PHP_MINIT_FUNCTION(winsystem_thread);
 PHP_MINIT_FUNCTION(winsystem_unicode);
+PHP_MINIT_FUNCTION(winsystem_service);
+PHP_MINIT_FUNCTION(winsystem_service_controller);
 
 PHP_MSHUTDOWN_FUNCTION(winsystem_thread);
 
