@@ -109,13 +109,17 @@ zval *winsystem_object_read_property(zval *object, zval *member, int type TSRMLS
 	}
 
 	if (worked == SUCCESS) {
-		worked = hnd->read_func(generic_object, member, &retval TSRMLS_CC);
-		if (worked == SUCCESS) {
-			Z_SET_REFCOUNT_P(retval, 0);
-			Z_UNSET_ISREF_P(retval);
-		} else {
-			retval = EG(uninitialized_zval_ptr);
-		}
+        if (hnd->read_func != NULL) {
+            worked = hnd->read_func(generic_object, member, &retval TSRMLS_CC);
+		    if (worked == SUCCESS) {
+		    	Z_SET_REFCOUNT_P(retval, 0);
+			    Z_UNSET_ISREF_P(retval);
+		    } else {
+		    	retval = EG(uninitialized_zval_ptr);
+		    }
+        } else {
+            retval = std_object_handlers.read_property(object, member, 0 TSRMLS_CC);
+        }
 	} else {
 		retval = std_object_handlers.read_property(object, member, 0 TSRMLS_CC);
 	}
