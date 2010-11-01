@@ -10,9 +10,7 @@ use Win\System\Event;
 use Win\System\WaitMask;
 use Win\System\ArgumentException;
 
-// create two events
 $event = new Event();
-$signal = new Event();
 
 var_dump($event->waitMsg(30));
 var_dump($event->waitMsg(30, WaitMask::ALLINPUT));

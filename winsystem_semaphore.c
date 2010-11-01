@@ -433,7 +433,7 @@ static zend_object_value winsystem_semaphore_object_clone(zval *this_ptr TSRMLS_
 	DuplicateHandle(GetCurrentProcess(), 
                     old_semaphore_object->handle, 
                     GetCurrentProcess(),
-                    new_semaphore_object->handle, 
+                    &new_semaphore_object->handle, 
                     0, /* Ignored, we're using same_access */
                     old_semaphore_object->can_inherit,
                     DUPLICATE_SAME_ACCESS);

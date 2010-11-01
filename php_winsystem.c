@@ -32,7 +32,7 @@ PHP_MINIT_FUNCTION(winsystem)
 	PHP_MINIT(winsystem_mutex)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(winsystem_semaphore)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(winsystem_event)(INIT_FUNC_ARGS_PASSTHRU);
-	//PHP_MINIT(winsystem_timer)(INIT_FUNC_ARGS_PASSTHRU);
+	PHP_MINIT(winsystem_timer)(INIT_FUNC_ARGS_PASSTHRU);
 #ifdef ZTS
 	//PHP_MINIT(winsystem_timerqueue)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(winsystem_thread)(INIT_FUNC_ARGS_PASSTHRU);

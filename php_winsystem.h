@@ -100,13 +100,27 @@ typedef struct _winsystem_event_object {
 	winsystem_name name;
 } winsystem_event_object;
 
+/* Storage container for timer callbacks */
+typedef struct _winsystem_timer_callback {
+	zend_fcall_info callback_info;
+	zend_fcall_info_cache callback_cache;
+	char *src_filename;
+	uint src_lineno;
+	int refcount;
+#ifdef ZTS
+	TSRMLS_D;
+#endif
+} winsystem_timer_callback;
+
 /* timer object */
 typedef struct _winsystem_timer_object {
 	zend_object    std;
 	zend_bool      is_constructed;
 	HANDLE         handle;
 	BOOL           can_inherit;
+	zend_bool      is_unicode;
 	winsystem_name name;
+	winsystem_timer_callback *store;
 } winsystem_timer_object;
 
 #ifdef ZTS
@@ -147,6 +161,10 @@ typedef struct _winsystem_thread_object {
 
 #endif
 
+/* ----------------------------------------------------------------
+  Property Magic                                            
+------------------------------------------------------------------*/
+
 /* Property read/write callbacks */
 typedef int (* winsystem_prop_read_t) (winsystem_generic_object *object, zval *member, zval **retval TSRMLS_DC);
 typedef int (* winsystem_prop_write_t)(winsystem_generic_object *object, zval *member, zval *value TSRMLS_DC);
@@ -156,6 +174,19 @@ typedef struct _winsystem_prop_handler {
     winsystem_prop_read_t  read_func;
     winsystem_prop_write_t write_func;
 } winsystem_prop_handler;
+
+/* Registers the read and write handlers for a class's property */
+static inline void winsystem_register_prop_handler(HashTable *prop_handlers, zend_class_entry *ce, char *prop_name, 
+                                                   winsystem_prop_read_t read_func, winsystem_prop_write_t write_func TSRMLS_DC)
+{
+    winsystem_prop_handler handler;
+
+    handler.read_func  = read_func;
+    handler.write_func = write_func;
+
+    zend_hash_add(prop_handlers, prop_name, sizeof(prop_name) + 1, &handler, sizeof(winsystem_prop_handler), NULL);
+    zend_declare_property_null(ce, prop_name, sizeof(prop_name), ZEND_ACC_PUBLIC TSRMLS_CC);
+}
 
 /* ----------------------------------------------------------------
   Exported C API                                            
@@ -176,21 +207,7 @@ extern zend_class_entry *ce_winsystem_argexception;
 extern zend_class_entry *ce_winsystem_versionexception;
 
 extern zend_class_entry *ce_winsystem_service_controller;
-
 extern zend_object_handlers winsystem_object_handlers;
-
-/* Registers the read and write handlers for a class's property */
-static inline void winsystem_register_prop_handler(HashTable *prop_handlers, zend_class_entry *ce, char *prop_name, 
-                                                   winsystem_prop_read_t read_func, winsystem_prop_write_t write_func TSRMLS_DC)
-{
-    winsystem_prop_handler handler;
-
-    handler.read_func  = read_func;
-    handler.write_func = write_func;
-
-    zend_hash_add(prop_handlers, prop_name, sizeof(prop_name) + 1, &handler, sizeof(winsystem_prop_handler), NULL);
-    zend_declare_property_null(ce, prop_name, sizeof(prop_name), ZEND_ACC_PUBLIC TSRMLS_CC);
-}
 
 /* ----------------------------------------------------------------
   Object Globals, lifecycle and static linking                                                

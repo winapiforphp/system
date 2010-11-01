@@ -27,14 +27,14 @@ class argEvent extends Event {
 $event = new goodEvent();
 var_dump($event->getName());
 
-// bad semaphore will throw exception
+// bad event will throw exception
 try {
     $event = new badEvent();
 } catch (Exception $e) {
     echo $e->getMessage(), "\n";
 }
 
-// arg mutex will create a new named mutex
+// arg event will create a new named event
 $event = new argEvent('foobar');
 var_dump($event->getName());
 ?>

@@ -9,9 +9,7 @@ if(!extension_loaded('winsystem')) die('skip - winsystem extension not available
 use Win\System\Event;
 use Win\System\ArgumentException;
 
-// create two events
 $event = new Event();
-$signal = new Event();
 
 var_dump($event->wait());
 var_dump($event->wait(30));

@@ -425,7 +425,7 @@ static zend_object_value winsystem_event_object_clone(zval *this_ptr TSRMLS_DC)
 	DuplicateHandle(GetCurrentProcess(), 
                     old_event_object->handle, 
                     GetCurrentProcess(),
-                    new_event_object->handle, 
+                    &new_event_object->handle, 
                     0, /* Ignored, we're using same_access */
                     old_event_object->can_inherit,
                     DUPLICATE_SAME_ACCESS);
