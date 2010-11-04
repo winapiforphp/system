@@ -134,22 +134,14 @@ typedef struct _winsystem_timerqueue_object {
 	HashTable	   *timers;
 } winsystem_timerqueue_object;
 
-
-
 /* Data structure for threads information */
 typedef struct _winsystem_thread_data {
-	char *   src_filename;
-	uint     src_lineno;
 	char *   file;
 	void *** parent_tsrmls;
 	HANDLE   start_event;
 	HANDLE   thread_handle;
 	DWORD    thread_id;
-	void *** child_tsrmls;
-	char *   classname;
-	int      classlen;
-	zend_uint param_count;
-	zval ***params;
+	zend_fcall_info callback_info;
 } winsystem_thread_data;
 
 /* thread object */
@@ -213,8 +205,8 @@ extern zend_object_handlers winsystem_object_handlers;
   Object Globals, lifecycle and static linking                                                
 ------------------------------------------------------------------*/
 ZEND_BEGIN_MODULE_GLOBALS(winsystem)
-	zend_llist threads;
     zend_llist processes;
+	zend_llist threads;
 	DWORD process_id;
 	DWORD thread_id;
 ZEND_END_MODULE_GLOBALS(winsystem)
@@ -237,6 +229,8 @@ PHP_MINIT_FUNCTION(winsystem_unicode);
 PHP_MINIT_FUNCTION(winsystem_service);
 PHP_MINIT_FUNCTION(winsystem_service_controller);
 
+PHP_RINIT_FUNCTION(winsystem_thread);
+PHP_RSHUTDOWN_FUNCTION(winsystem_thread);
 PHP_MSHUTDOWN_FUNCTION(winsystem_thread);
 
 /* Required for static linking */

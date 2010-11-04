@@ -48,6 +48,7 @@ ZEND_BEGIN_ARG_INFO(WinSystemTimer_set_args, ZEND_SEND_BY_VAL)
 	ZEND_ARG_INFO(0, period)
 	ZEND_ARG_INFO(0, resume)
     ZEND_ARG_INFO(0, callback)
+	ZEND_ARG_INFO(0, ...)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO(WinSystemTimer_getName_args, ZEND_SEND_BY_VAL)

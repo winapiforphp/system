@@ -44,36 +44,18 @@ PHP_MINIT_FUNCTION(winsystem)
 PHP_MSHUTDOWN_FUNCTION(winsystem)
 {
 #ifdef ZTS
-	PHP_MSHUTDOWN(winsystem_thread)(INIT_FUNC_ARGS_PASSTHRU);
+	PHP_MSHUTDOWN(winsystem_thread)(SHUTDOWN_FUNC_ARGS_PASSTHRU);
 	ts_free_id(winsystem_globals_id);
 #endif
 	return SUCCESS;
 }
 
-/* Simple function to take a child thread, wait for it to finish, then destroy the
-   data we've stored for it */
-static void winsystem_finish_thread(void *data)
-{
-	winsystem_thread_data *thread_data = (winsystem_thread_data *) data;
-
-	WaitForSingleObject(thread_data->thread_handle, INFINITE);
-	CloseHandle(thread_data->thread_handle);
-
-	efree(thread_data->file);
-	efree(thread_data->src_filename);
-	efree(thread_data->classname);
-	thread_data->parent_tsrmls = NULL;
-	thread_data->child_tsrmls = NULL;
-	/* Apparently the linked list does the efree for me 
-	efree(thread_data);*/
-}
-
 /* initialize the thread list */
 PHP_RINIT_FUNCTION(winsystem)
 {
-#ifdef ZTS
 	zend_llist_init(&WINSYSTEM_G(processes), sizeof(HANDLE), NULL, 1);
-	zend_llist_init(&WINSYSTEM_G(threads), sizeof(winsystem_thread_data), winsystem_finish_thread, 1);
+#ifdef ZTS
+	PHP_RINIT(winsystem_thread)(INIT_FUNC_ARGS_PASSTHRU);
 #endif
 	return SUCCESS;
 }
@@ -83,9 +65,9 @@ PHP_RINIT_FUNCTION(winsystem)
 PHP_RSHUTDOWN_FUNCTION(winsystem)
 {
 #ifdef ZTS
-	zend_llist_destroy(&WINSYSTEM_G(threads)); 
-	zend_llist_destroy(&WINSYSTEM_G(processes)); 
+	PHP_RSHUTDOWN(winsystem_thread)(SHUTDOWN_FUNC_ARGS_PASSTHRU);
 #endif
+	zend_llist_destroy(&WINSYSTEM_G(processes)); 
 	return SUCCESS;
 }
 

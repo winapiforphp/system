@@ -11,15 +11,13 @@ use Win\System\Thread;
 use Win\System\Mutex;
 use Win\System\Event;
 
-class TestSubThread extends Thread {
+class TestSubThread {
     function run() {
         echo "subthread is doing work\n";
     }
 }
 
-/* To create a thread, extend the thread class and
-  implement the run method */
-class TestThread extends Thread {
+class TestThread {
     function run() {
         // create our output mutex, we don't want to own it yet
         $mutex = new Mutex('Output');
@@ -50,8 +48,13 @@ class TestThread extends Thread {
         echo "Our global count is $count \n";
         $event->set();
 
-        //$thread = new TestSubThread();
-        //$thread->run();
+        $thread = new TestSubThread();
+        Thread::start(array($thread, 'run'));
+        Thread::start(array($thread, 'run'));
+        Thread::start(array($thread, 'run'));
+        Thread::start(array($thread, 'run'));
+        Thread::start(array($thread, 'run'));
+        Thread::start(array($thread, 'run'));
     }
 
     function foobar() {
@@ -66,8 +69,8 @@ Thread::set('count', 0);
   in the current thread, and the thread object that can
   be accessed in $this in the run method */
 $thread = new TestThread();
-$thread->start();
-$thread->start();
-$thread->start();
-$thread->start();
+Thread::start(array($thread, 'run'));
+Thread::start(array($thread, 'run'));
+Thread::start(array($thread, 'run'));
+Thread::start(array($thread, 'run'));
 echo "Done\n";

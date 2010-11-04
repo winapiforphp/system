@@ -25,6 +25,7 @@ ZEND_DECLARE_MODULE_GLOBALS(winsystem);
 #include "php_main.h"
 #include "ext/standard/php_smart_str.h"
 #include "ext/standard/php_var.h" 
+#include "implement_waitable.h"
 
 /* All the classes in this file */
 zend_class_entry *ce_winsystem_thread;
@@ -33,13 +34,16 @@ zend_class_entry *ce_winsystem_thread;
 TsHashTable winsystem_threads_globals;
 
 DWORD WINAPI php_winsystem_thread_callback(LPVOID lpParam);
-int php_winsystem_copy_zval(zval **retval, zval *src, void ***prev_tsrm_ls TSRMLS_DC);
+int php_winsystem_thread_copy_zval(zval **retval, zval *src, void ***prev_tsrm_ls TSRMLS_DC);
+static void winsystem_finish_thread(void *data);
 
 /* ----------------------------------------------------------------
   Win\System\Thread Userland API                                                    
 ------------------------------------------------------------------*/
 
-ZEND_BEGIN_ARG_INFO(WinSystemThread_run_args, ZEND_SEND_BY_VAL)
+ZEND_BEGIN_ARG_INFO(WinSystemThread_start_args, ZEND_SEND_BY_VAL)
+    ZEND_ARG_INFO(0, callback)
+	ZEND_ARG_INFO(0, ...)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO(WinSystemThread_set_args, ZEND_SEND_BY_VAL)
@@ -59,59 +63,69 @@ ZEND_BEGIN_ARG_INFO(WinSystemThread_unset_args, ZEND_SEND_BY_VAL)
 	ZEND_ARG_INFO(0, name)
 ZEND_END_ARG_INFO()
 
-/* {{{ proto bool Win\System\Thread->start()
-       runs the "run" method of the extended class */
+/* {{{ proto bool Win\System\Thread::start()
+       want it to take any random callback, and data, and spawn it in a new thread*/
 PHP_METHOD(WinSystemThread, start)
 {
 	HANDLE thread_handle;
 	DWORD thread_id = 0;
-	zval ***args = NULL;
-	int argc = 0, i = 0;
-	zend_error_handling error_handling;
+	SECURITY_ATTRIBUTES thread_attributes;
+	BOOL inherit = TRUE;
+
 	winsystem_thread_data *thread_callback_data;
-	winsystem_thread_object *handle_object = (winsystem_thread_object*)zend_object_store_get_object(getThis() TSRMLS_CC);
-	
-	zend_replace_error_handling(EH_THROW, ce_winsystem_exception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters_none() == FAILURE) {
+
+	zend_fcall_info finfo;
+	zend_fcall_info_cache fcache;
+	zval ***args = NULL;
+	int argc = 0;
+	zend_error_handling error_handling;
+
+	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "f*", &finfo, &fcache, &args, &argc) == FAILURE) {
 		zend_restore_error_handling(&error_handling TSRMLS_CC);
 		return;
 	}
 	zend_restore_error_handling(&error_handling TSRMLS_CC);
 
-	thread_callback_data = ecalloc(1, sizeof(winsystem_thread_data));
-	thread_callback_data->src_filename = estrdup(zend_get_executed_filename(TSRMLS_C));
-	thread_callback_data->src_lineno = zend_get_executed_lineno(TSRMLS_C);
-	thread_callback_data->file = estrdup(SG(request_info).path_translated);
+	thread_callback_data = pecalloc(1, sizeof(winsystem_thread_data), 1);
+	zend_fcall_info_argp(&finfo TSRMLS_CC, argc, args);
+	thread_callback_data->callback_info = finfo;
 	thread_callback_data->parent_tsrmls = TSRMLS_C;
-	thread_callback_data->classname = estrdup(Z_OBJCE_P(getThis())->name);
-	thread_callback_data->classlen = Z_OBJCE_P(getThis())->name_length;
-	
+	thread_callback_data->file = pestrdup(SG(request_info).path_translated, 1);
+	thread_callback_data->callback_info.retval_ptr_ptr = NULL;
+	thread_callback_data->callback_info.function_table = NULL;
+	thread_callback_data->callback_info.symbol_table = NULL;
 
-	/* Create an event for "we've started the thread" */
+	thread_attributes.nLength = sizeof(SECURITY_ATTRIBUTES);
+	thread_attributes.lpSecurityDescriptor = NULL;
+	thread_attributes.bInheritHandle = inherit;
+
 	thread_callback_data->start_event = CreateEvent(NULL, TRUE, FALSE, NULL);
 	if (thread_callback_data->start_event == NULL) {
 		winsystem_create_error(GetLastError(), ce_winsystem_exception TSRMLS_CC);
 		return;
 	}
 
-    /* Create the thread and store the handle in our new object */
+	/* Create the thread and store the handle in our new object */
 	thread_handle = (HANDLE) _beginthreadex( 
-            NULL,                   
+            &thread_attributes,                   
             0,                      
             php_winsystem_thread_callback,       
             thread_callback_data, 
             0,
             &thread_id);
 
-	/* Wait for the "event start" to be done in the new thread */
+	/* Wait for the "event start" to be done in the new thread*/
 	WaitForSingleObject(thread_callback_data->start_event, INFINITE);
 	CloseHandle(thread_callback_data->start_event);
 
-	/* Store our shiny new thread */
+	/* This is a per thread list that holds all child threads spawned
+	   Threads will be waited on in mshutdown */ 
 	thread_callback_data->thread_handle = thread_handle;
 	thread_callback_data->thread_id = thread_id;
-
 	zend_llist_add_element(&WINSYSTEM_G(threads), (void *)thread_callback_data);
+
+	/* TODO: create our thread object and send it back, with the thread handle and id inside */
 }
 /* }}} */
 
@@ -227,12 +241,14 @@ PHP_METHOD(WinSystemThread, unset)
 /* register thread methods */
 static zend_function_entry winsystem_thread_functions[] = {
 	// PHP_ME(WinSystemThread, __construct, NULL, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL | ZEND_ACC_CTOR)
-	PHP_ME(WinSystemThread, start, NULL, ZEND_ACC_PUBLIC | ZEND_ACC_FINAL)
-	PHP_ABSTRACT_ME(WinSystemThread, run, WinSystemThread_run_args)
+	PHP_ME(WinSystemThread, start, NULL, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
 	PHP_ME(WinSystemThread, set, WinSystemThread_set_args, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
 	PHP_ME(WinSystemThread, get, WinSystemThread_get_args, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
 	PHP_ME(WinSystemThread, isset, WinSystemThread_isset_args, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
 	PHP_ME(WinSystemThread, unset, WinSystemThread_unset_args, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
+	PHP_ME(WinSystemWaitable, wait, WinSystemWaitable_wait_args, ZEND_ACC_PUBLIC)
+	PHP_ME(WinSystemWaitable, waitMsg, WinSystemWaitable_waitMsg_args, ZEND_ACC_PUBLIC)
+	PHP_ME(WinSystemWaitable, signalAndWait, WinSystemWaitable_signalAndWait_args, ZEND_ACC_PUBLIC)
 	{NULL, NULL, NULL}
 };
 /* }}} */
@@ -241,95 +257,61 @@ static zend_function_entry winsystem_thread_functions[] = {
   Win\System\Thread C API                                                    
 ------------------------------------------------------------------*/
 
-static DWORD WINAPI php_winsystem_thread_callback(LPVOID lpParam) 
-{ 
-	/* This has to be done, because we need to set up new resources for the thread
-	so it will have a different TSRMLS value anyway */
-	TSRMLS_FETCH();
+zend_object_value php_winsystem_thread_clone(zval *zobject, void ***prev_tsrm_ls TSRMLS_DC)
+{
+	zend_object_value new_obj_val;
+	zend_object *old_object;
+	zend_object *new_object;
+	zend_object_handle handle = Z_OBJ_HANDLE_P(zobject);
 
-	zend_file_handle file_handle;
-	zend_op_array *orig_op_array = NULL;
-	zend_op_array *new_op_array = NULL;
+	/* assume that create isn't overwritten, so when clone depends on the 
+	 * overwritten one then it must itself be overwritten */
+	old_object = zend_objects_get_address(zobject, prev_tsrm_ls);
+	new_obj_val = zend_objects_new(&new_object, old_object->ce TSRMLS_CC);
 
-	winsystem_thread_data *thread_callback_data = (winsystem_thread_data *)lpParam;
-	thread_callback_data->child_tsrmls = TSRMLS_C;
+	ALLOC_HASHTABLE(new_object->properties);
+	zend_hash_init(new_object->properties, 0, NULL, ZVAL_PTR_DTOR, 0);
 
-	/* Tell our main thread we've started - warning, main thread is going to delete this event  */
-	SetEvent(thread_callback_data->start_event);
+	zend_objects_clone_members(new_object, new_obj_val, old_object, handle TSRMLS_CC);
 
-	/* Just as if we were doing another whole PHP interpreter */
-	php_request_startup(TSRMLS_C);
+	return new_obj_val;
+}
 
-	/* Unhappy sucker */
-	SG(request_info).path_translated = estrdup(thread_callback_data->file);
-	file_handle.handle.fp = VCWD_FOPEN(thread_callback_data->file, "rb");
-	file_handle.filename = thread_callback_data->file;
- 	file_handle.type = ZEND_HANDLE_FP;
- 	file_handle.opened_path = NULL;
- 	file_handle.free_filename = 0;
+/* {{{ php_winsystem_thread_copy_zval_in_hash() */
+static HashTable *php_winsystem_thread_copy_zval_in_hash(HashTable *src,
+		void ***prev_tsrm_ls TSRMLS_DC)
+{
+	HashTable *retval;
+	HashPosition pos;
+	zend_hash_key key;
+	int key_type;
 
- 	EG(exit_status) = 0;
+	ALLOC_HASHTABLE(retval);
+	zend_hash_init(retval, 0, NULL, ZVAL_PTR_DTOR, 0);
 
-	orig_op_array = EG(active_op_array);
-	new_op_array= EG(active_op_array) = zend_compile_file(&file_handle, ZEND_INCLUDE TSRMLS_CC);
-	zend_destroy_file_handle(&file_handle TSRMLS_CC);
-
-	if (EG(active_op_array)) {
-
-		zend_class_entry **pce;
-		zval fname, *thread, *retval = NULL;
-		zend_fcall_info fci;
-
-		zval **args;
-		unsigned int i;
-
-		zend_lookup_class(thread_callback_data->classname, thread_callback_data->classlen, &pce TSRMLS_CC);
-		MAKE_STD_ZVAL(thread);
-		object_init_ex(thread, *pce);
-
-		ZVAL_STRINGL(&fname, "run", sizeof("run")-1, 0);
-
-		fci.size = sizeof(fci);
-		fci.function_table = &Z_OBJCE_P(thread)->function_table;
-		fci.function_name = &fname;
-		fci.symbol_table = NULL;
-		fci.object_ptr = thread;
-		fci.retval_ptr_ptr = &retval;
-
-		zend_try {
-			fci.params = safe_emalloc(thread_callback_data->param_count, sizeof(zval**), 0);
-			args = safe_emalloc(thread_callback_data->param_count, sizeof(zval*), 0);
-			for (i = 0; i < thread_callback_data->param_count; ++i) {
-				if (FAILURE == php_winsystem_copy_zval(&args[i],
-						*thread_callback_data->params[i],
-						thread_callback_data->parent_tsrmls TSRMLS_CC)) {
-					zend_bailout();
-				}
-				fci.params[i] = &args[i];
-				fci.param_count++;
-			}
-		} zend_end_try();
-
-		fci.param_count = 0;
-		fci.params = NULL;
-		fci.no_separation = 1;
-
-		zend_call_function(&fci, NULL TSRMLS_CC);
-		
-		destroy_op_array(EG(active_op_array) TSRMLS_CC);
-		efree(EG(active_op_array));
-		EG(active_op_array) = orig_op_array;
+	for (zend_hash_internal_pointer_reset_ex(src, &pos);
+			HASH_KEY_NON_EXISTANT != (
+				key_type = zend_hash_get_current_key_ex(src, &key.arKey,
+					&key.nKeyLength, &key.h, 0, &pos));
+			zend_hash_move_forward_ex(src, &pos)) {
+		zval **orig;
+		zval *val;
+		zend_hash_get_current_data_ex(src, (void **)&orig, &pos);
+		if (FAILURE == php_winsystem_thread_copy_zval(&val, *orig,
+					prev_tsrm_ls TSRMLS_CC)) {
+			zend_hash_destroy(retval);
+			FREE_HASHTABLE(retval);
+			return NULL;
+		}
+		zend_hash_quick_add(retval, key.arKey,
+				key_type == HASH_KEY_IS_LONG ? 0: key.nKeyLength, key.h, &val,
+				sizeof(zval*), NULL);
 	}
+	return retval;
+}
+/* }}} */
 
-	php_request_shutdown(NULL);
-
-	_endthreadex(0);
-
-    return 0; 
-} 
-
-/* {{{ php_winsystem_copy_zval() */
-static int php_winsystem_copy_zval(zval **retval, zval *src,
+static int php_winsystem_thread_copy_zval(zval **retval, zval *src,
 		void ***prev_tsrm_ls TSRMLS_DC)
 {
 	ALLOC_ZVAL(*retval);
@@ -337,8 +319,10 @@ static int php_winsystem_copy_zval(zval **retval, zval *src,
 		(*retval)->type = IS_NULL;
 	} else {
 		if (Z_TYPE_P(src) == IS_OBJECT) {
-			/*zend_class_entry *ce;
-			HashTable *props;
+			zend_class_entry *ce;
+			zend_function *clone;
+			zend_object_clone_obj_t clone_call;
+
 			if (!Z_OBJ_HT_P(src)->get_class_entry
 					|| !Z_OBJ_HT_P(src)->get_properties) {
 				goto fail;
@@ -348,51 +332,44 @@ static int php_winsystem_copy_zval(zval **retval, zval *src,
 			if (ce == NULL) {
 				goto fail;
 			}
+			clone = ce ? ce->clone : NULL;
+			clone_call =  Z_OBJ_HT_P(src)->clone_obj;
+			if (!clone_call) {
+				goto fail;
+			}
+			if (clone_call == zend_objects_clone_obj) {
+				Z_OBJVAL_PP(retval) = php_winsystem_thread_clone(src, prev_tsrm_ls TSRMLS_CC);
+			} else {
+				php_printf("Object type cannot be cloned cross-thread");
+				goto fail;
+			}
+			Z_TYPE_PP(retval) = IS_OBJECT;
+
+			
+
+
+			/*zend_class_entry *ce;
+			HashTable *props;
+			
 			props = Z_OBJ_HT_P(src)->get_properties(src, prev_tsrm_ls);
 			if (!props) {
 				goto fail;
 			}
-			props = php_thread_convert_object_refs_in_hash(props,
+			props = php_winsystem_thread_copy_zval_in_hash(props,
 					prev_tsrm_ls TSRMLS_CC);
 			(*retval)->type = IS_OBJECT;
 			if (FAILURE == object_and_properties_init(*retval, ce, props)) {
 				goto fail;
 			}*/
-			goto fail;
+
 		} else if (src->type == IS_ARRAY) {
-			/*
 			(*retval)->type = IS_ARRAY;
-			(*retval)->value.ht = php_thread_convert_object_refs_in_hash(
+			(*retval)->value.ht = php_winsystem_thread_copy_zval_in_hash(
 					src->value.ht, prev_tsrm_ls TSRMLS_CC);
 			if (!(*retval)->value.ht) {
 				goto fail;
-			}*/
-			goto fail;
+			}
 		} else if (src->type == IS_RESOURCE) {
-			/*
-			int id;
-			zend_rsrc_list_entry le;
-			php_thread_rsrc_desc_t desc;
-			void *rsrc_ptr;
-			rsrc_ptr = _zend_list_find(src->value.lval, &le.type, prev_tsrm_ls);
-			if (!rsrc_ptr) {
-				goto fail;
-			}
-			if (FAILURE == php_thread_get_rsrc_desc(&desc, le.type)) {
-				goto fail;
-			}
-			le.ptr = php_thread_clone_resource(&desc, rsrc_ptr, prev_tsrm_ls
-					TSRMLS_CC);
-			if (!le.ptr) {
-				goto fail;
-			}
-			php_stream_auto_cleanup((php_stream*)le.ptr);
-			id = zend_hash_next_free_element(&EG(regular_list));
-			zend_hash_index_update(&EG(regular_list), id, &le,
-					sizeof(le), NULL);
-			(*retval)->type = IS_RESOURCE;
-			(*retval)->value.lval = id; */
-			goto fail;
 		} else {
 			**retval = *src;
 			zval_copy_ctor(*retval);
@@ -406,6 +383,156 @@ fail:
 	return FAILURE;
 }
 /* }}} */
+void zend_class_add_ref(zend_class_entry **ce)
+{
+	(*ce)->refcount++;
+}
+
+/* {{{ php_thread_executor_globals_reinit() */
+static void php_thread_executor_globals_reinit(zend_executor_globals *dest,
+		zend_executor_globals *src)
+{
+	dest->current_module = src->current_module;
+}
+/* }}} */
+
+/* {{{ php_thread_compiler_globals_reinit() */
+static void php_thread_compiler_globals_reinit(zend_compiler_globals *dest,
+		zend_compiler_globals *src)
+{
+	zend_hash_clean(dest->function_table);
+	zend_hash_copy(dest->function_table, src->function_table,
+			(copy_ctor_func_t)function_add_ref, NULL,
+			sizeof(zend_function));
+	zend_hash_clean(dest->class_table);
+	zend_hash_copy(dest->class_table, src->class_table,
+			(copy_ctor_func_t)zend_class_add_ref, NULL,
+			sizeof(zend_class_entry*));
+	dest->last_static_member = 0;
+}
+/* }}} */
+
+static DWORD WINAPI php_winsystem_thread_callback(LPVOID lpParam) 
+{
+	/* This will be the exit value for the thread */
+	zval *retval = NULL;
+	zend_uint i = 0;
+	zval **args;
+
+	/* This has to be done, because we need to set up new resources for the thread
+	so it will have a different TSRMLS value anyway */
+	TSRMLS_FETCH(); 
+
+	winsystem_thread_data *thread_callback_data = (winsystem_thread_data *)lpParam;
+	zend_fcall_info callable;
+
+	callable.size = sizeof(callable);
+	callable.params = NULL;
+	callable.param_count = 0;
+	callable.retval_ptr_ptr = NULL;
+	callable.function_table = NULL;
+	callable.symbol_table = NULL;
+	callable.object_ptr = NULL;
+	callable.no_separation = 1;
+	callable.function_name = NULL;
+    
+	/* Just as if we were doing another whole PHP interpreter */
+	php_request_startup(TSRMLS_C);
+
+	php_thread_compiler_globals_reinit(
+			(zend_compiler_globals*)(*tsrm_ls)[TSRM_UNSHUFFLE_RSRC_ID(compiler_globals_id)],
+			(zend_compiler_globals*)(*(thread_callback_data->parent_tsrmls))[TSRM_UNSHUFFLE_RSRC_ID(compiler_globals_id)]);
+	php_thread_executor_globals_reinit(
+			(zend_executor_globals*)(*tsrm_ls)[TSRM_UNSHUFFLE_RSRC_ID(executor_globals_id)],
+			(zend_executor_globals*)(*(thread_callback_data->parent_tsrmls))[TSRM_UNSHUFFLE_RSRC_ID(executor_globals_id)]);
+
+	callable.function_table = EG(function_table);
+
+	callable.params = safe_emalloc(thread_callback_data->callback_info.param_count, sizeof(zval*), 0);
+	args = safe_emalloc(thread_callback_data->callback_info.param_count, sizeof(zval*), 0);
+	for (i = 0; i < thread_callback_data->callback_info.param_count; ++i) {
+		if (FAILURE == php_winsystem_thread_copy_zval(&args[i],
+				*thread_callback_data->callback_info.params[i],
+				thread_callback_data->parent_tsrmls TSRMLS_CC)) {
+			SetEvent(thread_callback_data->start_event);
+			goto out;
+		}
+		callable.params[i] = &args[i];
+	}
+	callable.param_count = thread_callback_data->callback_info.param_count;
+
+	if (FAILURE == php_winsystem_thread_copy_zval(
+				&callable.function_name,
+				thread_callback_data->callback_info.function_name,
+				thread_callback_data->parent_tsrmls TSRMLS_CC)) {
+		SetEvent(thread_callback_data->start_event);
+		goto out;
+	}
+	if (thread_callback_data->callback_info.object_ptr) {
+		if (FAILURE == php_winsystem_thread_copy_zval(
+				&callable.object_ptr,
+				thread_callback_data->callback_info.object_ptr,
+				thread_callback_data->parent_tsrmls TSRMLS_CC)) {
+			SetEvent(thread_callback_data->start_event);
+			goto out;
+		}
+	}
+
+	/* Tell our main thread we've started */
+	SetEvent(thread_callback_data->start_event);
+
+	/* Do the actual callback */
+	callable.retval_ptr_ptr = &retval;
+
+	if (zend_call_function(&(callable), NULL TSRMLS_CC) == SUCCESS) {
+		php_printf("we need to juggle to int and thread return value\n");
+	} else {
+		// TODO: thread exit code of EXCEPTION_ILLEGAL_INSTRUCTION 
+	}
+
+out:
+	/* Cleanup, cleanup, everybody clean up... */
+	for (i = 0; i < callable.param_count; ++i) {
+		zval_ptr_dtor(&args[i]);
+	}
+
+	if (callable.function_name) {
+		zval_ptr_dtor(&callable.function_name);
+	}
+
+	if (callable.object_ptr) {
+		zval_ptr_dtor(&callable.object_ptr);
+	}
+
+	efree(callable.params);
+	efree(args);
+
+	if(retval) {
+		zval_ptr_dtor(&retval);
+	}
+
+	zend_fcall_info_args_clear(&thread_callback_data->callback_info, 1);
+
+	/* Request shutdown is going to destroy our llist of threads */
+	php_request_shutdown(TSRMLS_C);
+
+	_endthreadex(0);
+
+    return 0;
+} 
+
+/* Simple function to take a child thread, wait for it to finish, then destroy the
+   data we've stored for it */
+static void winsystem_finish_thread(void *data)
+{
+	winsystem_thread_data *thread_data = (winsystem_thread_data *) data;
+
+	WaitForSingleObject(thread_data->thread_handle, INFINITE);
+	CloseHandle(thread_data->thread_handle);
+
+	pefree(thread_data->file, 1);
+	/* No need to pefree the thread_data, that is implicit */
+}
 
 /* ----------------------------------------------------------------
   Win\System\Thread LifeCycle Functions                                                    
@@ -423,7 +550,24 @@ PHP_MINIT_FUNCTION(winsystem_thread)
 	return SUCCESS;
 }
 
-/* free our critical section lock for writing the global vars */
+
+/* initialize the thread list
+   this is per request, note that all items in callback
+   have their OWN list */
+PHP_RINIT_FUNCTION(winsystem_thread)
+{
+	zend_llist_init(&WINSYSTEM_G(threads), sizeof(winsystem_thread_data), winsystem_finish_thread, 1);
+	return SUCCESS;
+}
+
+/* Free our thread stack for main process */
+PHP_RSHUTDOWN_FUNCTION(winsystem_thread)
+{
+	zend_llist_destroy(&WINSYSTEM_G(threads)); 
+	return SUCCESS;
+}
+
+/* free our thread globals storage */
 PHP_MSHUTDOWN_FUNCTION(winsystem_thread)
 {
 	zend_ts_hash_destroy(&winsystem_threads_globals);

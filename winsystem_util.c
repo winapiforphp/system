@@ -16,8 +16,6 @@
   +----------------------------------------------------------------------+
 */
 
-/* $Id$ */
-
 #include "php_winsystem.h"
 #include "zend_exceptions.h"
 #include "ext/spl/spl_exceptions.h"
