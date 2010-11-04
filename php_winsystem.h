@@ -201,6 +201,8 @@ extern zend_class_entry *ce_winsystem_versionexception;
 extern zend_class_entry *ce_winsystem_service_controller;
 extern zend_object_handlers winsystem_object_handlers;
 
+    zend_hash_add(prop_handlers, prop_name, strlen(prop_name) + 1, &handler, sizeof(winsystem_prop_handler), NULL);
+    zend_declare_property_null(ce, prop_name, strlen(prop_name), ZEND_ACC_PUBLIC TSRMLS_CC);
 /* ----------------------------------------------------------------
   Object Globals, lifecycle and static linking                                                
 ------------------------------------------------------------------*/
