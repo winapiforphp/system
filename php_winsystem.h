@@ -176,8 +176,8 @@ static inline void winsystem_register_prop_handler(HashTable *prop_handlers, zen
     handler.read_func  = read_func;
     handler.write_func = write_func;
 
-    zend_hash_add(prop_handlers, prop_name, sizeof(prop_name) + 1, &handler, sizeof(winsystem_prop_handler), NULL);
-    zend_declare_property_null(ce, prop_name, sizeof(prop_name), ZEND_ACC_PUBLIC TSRMLS_CC);
+    zend_hash_add(prop_handlers, prop_name, strlen(prop_name) + 1, &handler, sizeof(winsystem_prop_handler), NULL);
+    zend_declare_property_null(ce, prop_name, strlen(prop_name), ZEND_ACC_PUBLIC TSRMLS_CC);
 }
 
 /* ----------------------------------------------------------------
@@ -200,9 +200,6 @@ extern zend_class_entry *ce_winsystem_versionexception;
 
 extern zend_class_entry *ce_winsystem_service_controller;
 extern zend_object_handlers winsystem_object_handlers;
-
-    zend_hash_add(prop_handlers, prop_name, strlen(prop_name) + 1, &handler, sizeof(winsystem_prop_handler), NULL);
-    zend_declare_property_null(ce, prop_name, strlen(prop_name), ZEND_ACC_PUBLIC TSRMLS_CC);
 /* ----------------------------------------------------------------
   Object Globals, lifecycle and static linking                                                
 ------------------------------------------------------------------*/
@@ -228,8 +225,6 @@ PHP_MINIT_FUNCTION(winsystem_timer);
 PHP_MINIT_FUNCTION(winsystem_timerqueue);
 PHP_MINIT_FUNCTION(winsystem_thread);
 PHP_MINIT_FUNCTION(winsystem_unicode);
-PHP_MINIT_FUNCTION(winsystem_service);
-PHP_MINIT_FUNCTION(winsystem_service_controller);
 
 PHP_RINIT_FUNCTION(winsystem_thread);
 PHP_RSHUTDOWN_FUNCTION(winsystem_thread);
