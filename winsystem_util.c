@@ -28,7 +28,7 @@ zend_class_entry *ce_winsystem_versionexception;
 zend_object_handlers winsystem_object_handlers;
 
 /* {{{ winsystem_create_error - grabs a message from GetLastError int and throws an exception with it */
-void winsystem_create_error(int error, zend_class_entry *ce TSRMLS_DC)
+PHP_WINSYSTEM_API void winsystem_create_error(int error, zend_class_entry *ce TSRMLS_DC)
 {
 	DWORD ret;
 	char * buffer = NULL;
@@ -57,7 +57,7 @@ void winsystem_create_error(int error, zend_class_entry *ce TSRMLS_DC)
 /* }}} */
 
 /* {{{ wingui_juggle_type - takes a zval and juggles the type */
-int winsystem_juggle_type(zval *value, int type TSRMLS_DC)
+PHP_WINSYSTEM_API int winsystem_juggle_type(zval *value, int type TSRMLS_DC)
 {
 	zval tmp_value;
 

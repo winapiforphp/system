@@ -23,7 +23,7 @@ static void _populate_array_with_services_enumeration (zval *out_array, char *co
     zval *service_array,
          *service_status_process_array;
     BOOL result;
-    int  i;
+    DWORD  i;
 
     scm_handle = OpenSCManager(computer, SERVICES_ACTIVE_DATABASE, SC_MANAGER_ENUMERATE_SERVICE);
     if (scm_handle == NULL)

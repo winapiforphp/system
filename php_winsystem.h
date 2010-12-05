@@ -35,123 +35,14 @@
 #include "TSRM.h"
 #endif
 
+/* Externally useable APIS*/
+#include "php_winsystem_api.h"
+
 /* ----------------------------------------------------------------
   Typedefs                                               
 ------------------------------------------------------------------*/
 #define PHP_WINSYSTEM_NS ZEND_NS_NAME("Win", "System")
 #define PHP_WINSYSTEM_SERVICE_NS ZEND_NS_NAME(PHP_WINSYSTEM_NS, "Service")
-
-/* Generic object - all object's that want sexy property read/write callbacks should have this header */
-typedef struct _winsystem_generic_object {
-    zend_object        std;
-    zend_object_handle zobject_handle;
-    HashTable          *prop_handler;
-} winsystem_generic_object;
-
-/* Names in most things can be either a string or unicode object */
-typedef union _winsystem_name {
-	zval *      unicode_object;
-	char *      string;
-} winsystem_name;
-
-/* unicode object */
-typedef struct _winsystem_unicode_object {
-	zend_object  std;
-	zend_bool    is_constructed;
-	WCHAR *      unicode_string;
-	CHAR *       multibyte_string;
-} winsystem_unicode_object;
-
-/* waitable object */
-typedef struct _winsystem_waitable_object {
-	zend_object  std;
-	zend_bool    is_constructed;
-	HANDLE       handle;
-} winsystem_waitable_object;
-
-/* mutex object */
-typedef struct _winsystem_mutex_object {
-	zend_object    std;
-	zend_bool      is_constructed;
-	HANDLE         handle;
-	BOOL           can_inherit;
-	zend_bool      is_unicode;
-	winsystem_name name;
-} winsystem_mutex_object;
-
-/* semaphore object */
-typedef struct _winsystem_semaphore_object {
-	zend_object    std;
-	zend_bool      is_constructed;
-	HANDLE         handle;
-	long           max_count;
-	BOOL           can_inherit;
-	zend_bool      is_unicode;
-	winsystem_name name;
-} winsystem_semaphore_object;
-
-/* event object */
-typedef struct _winsystem_event_object {
-	zend_object    std;
-	zend_bool      is_constructed;
-	HANDLE         handle;
-	BOOL           can_inherit;
-	zend_bool      is_unicode;
-	winsystem_name name;
-} winsystem_event_object;
-
-/* Storage container for timer callbacks */
-typedef struct _winsystem_timer_callback {
-	zend_fcall_info callback_info;
-	zend_fcall_info_cache callback_cache;
-	char *src_filename;
-	uint src_lineno;
-	int refcount;
-#ifdef ZTS
-	TSRMLS_D;
-#endif
-} winsystem_timer_callback;
-
-/* timer object */
-typedef struct _winsystem_timer_object {
-	zend_object    std;
-	zend_bool      is_constructed;
-	HANDLE         handle;
-	BOOL           can_inherit;
-	zend_bool      is_unicode;
-	winsystem_name name;
-	winsystem_timer_callback *store;
-} winsystem_timer_object;
-
-#ifdef ZTS
-
-/* timerqueue object */
-typedef struct _winsystem_timerqueue_object {
-	zend_object    std;
-	zend_bool      is_constructed;
-	HANDLE         handle;
-	zval           *event;
-	HashTable	   *timers;
-} winsystem_timerqueue_object;
-
-/* Data structure for threads information */
-typedef struct _winsystem_thread_data {
-	char *   file;
-	void *** parent_tsrmls;
-	HANDLE   start_event;
-	HANDLE   thread_handle;
-	DWORD    thread_id;
-	zend_fcall_info callback_info;
-} winsystem_thread_data;
-
-/* thread object */
-typedef struct _winsystem_thread_object {
-	zend_object  std;
-	zend_bool    is_constructed;
-	HANDLE       handle;
-} winsystem_thread_object;
-
-#endif
 
 /* ----------------------------------------------------------------
   Property Magic                                            
@@ -181,15 +72,6 @@ static inline void winsystem_register_prop_handler(HashTable *prop_handlers, zen
 }
 
 /* ----------------------------------------------------------------
-  Exported C API                                            
-------------------------------------------------------------------*/
-
-extern PHP_WINSYSTEM_API zend_class_entry *ce_winsystem_unicode;
-extern PHP_WINSYSTEM_API void winsystem_create_error(int error, zend_class_entry *ce TSRMLS_DC);
-extern PHP_WINSYSTEM_API WCHAR * win_system_convert_to_wchar(const CHAR ** utf8_string, int type);
-extern PHP_WINSYSTEM_API CHAR * win_system_convert_to_char(const WCHAR ** utf16_string, int type);
-
-/* ----------------------------------------------------------------
   Class Entries                                              
 ------------------------------------------------------------------*/
 extern zend_class_entry *ce_winsystem_event;
@@ -200,8 +82,9 @@ extern zend_class_entry *ce_winsystem_versionexception;
 
 extern zend_class_entry *ce_winsystem_service_controller;
 extern zend_object_handlers winsystem_object_handlers;
+
 /* ----------------------------------------------------------------
-  Object Globals, lifecycle and static linking                                                
+  Object Globals, lifecycle and static linking                    
 ------------------------------------------------------------------*/
 ZEND_BEGIN_MODULE_GLOBALS(winsystem)
     zend_llist processes;
