@@ -37,6 +37,7 @@ PHP_MINIT_FUNCTION(winsystem)
 	//PHP_MINIT(winsystem_timerqueue)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(winsystem_thread)(INIT_FUNC_ARGS_PASSTHRU);
 #endif
+    PHP_MINIT(winsystem_registry)(INIT_FUNC_ARGS_PASSTHRU);
 	return SUCCESS;
 }
 

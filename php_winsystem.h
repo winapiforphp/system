@@ -108,6 +108,7 @@ PHP_MINIT_FUNCTION(winsystem_timer);
 PHP_MINIT_FUNCTION(winsystem_timerqueue);
 PHP_MINIT_FUNCTION(winsystem_thread);
 PHP_MINIT_FUNCTION(winsystem_unicode);
+PHP_MINIT_FUNCTION(winsystem_registry);
 
 PHP_RINIT_FUNCTION(winsystem_thread);
 PHP_RSHUTDOWN_FUNCTION(winsystem_thread);
