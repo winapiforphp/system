@@ -131,7 +131,7 @@ static zend_function_entry winsystem_unicode_functions[] = {
 
 /* {{{ win_system_convert_to_wchar
        api converts char * of charset type to utf16/wchar */
-WCHAR * win_system_convert_to_wchar(const CHAR ** utf8_string, int type)
+PHP_WINSYSTEM_API WCHAR * win_system_convert_to_wchar(const CHAR ** utf8_string, int type)
 {
 	wchar_t * utf16_string = NULL;
 	int utf16_string_length, result;
@@ -169,7 +169,7 @@ WCHAR * win_system_convert_to_wchar(const CHAR ** utf8_string, int type)
 
 /* {{{ win_system_convert_to_char
        api converts wchar to char * of charset type */
-CHAR * win_system_convert_to_char(const WCHAR ** utf16_string, int type)
+PHP_WINSYSTEM_API CHAR * win_system_convert_to_char(const WCHAR ** utf16_string, int type)
 {
 	char * utf8_string = NULL;
 	int utf8_string_length, result;
@@ -178,7 +178,7 @@ CHAR * win_system_convert_to_char(const WCHAR ** utf16_string, int type)
 	}
 
 	utf8_string_length = WideCharToMultiByte(
-		CP_UTF8,       /* convert from UTF-8 */
+		type,       /* convert from UTF-8 */
 		0,             /* error on invalid chars*/
 		*utf16_string, /* source UTF-8 string*/
 		-1,            /* total length of source UTF-8 string, in CHAR's (= bytes), including end-of-string \0 */
@@ -192,7 +192,7 @@ CHAR * win_system_convert_to_char(const WCHAR ** utf16_string, int type)
 	utf8_string = emalloc(utf8_string_length * sizeof(char));
 
     result = WideCharToMultiByte(
-		CP_UTF8,                // convert from UTF-8
+		type,                // convert from UTF-8
 		0,   // error on invalid chars
 		*utf16_string,            // source UTF-8 string
 		-1,                 // total length of source UTF-8 string, in CHAR's (= bytes), including end-of-string \0
