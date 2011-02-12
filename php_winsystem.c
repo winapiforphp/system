@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2010 The PHP Group                                |
+  | Copyright (c) 1997-2011 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -21,7 +21,7 @@
 ZEND_DECLARE_MODULE_GLOBALS(winsystem);
 
 /* ----------------------------------------------------------------
-  \Win\System LifeCycle Functions                                                    
+  \Win\System LifeCycle Functions
 ------------------------------------------------------------------*/
 
 PHP_MINIT_FUNCTION(winsystem)
@@ -37,7 +37,7 @@ PHP_MINIT_FUNCTION(winsystem)
 	//PHP_MINIT(winsystem_timerqueue)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(winsystem_thread)(INIT_FUNC_ARGS_PASSTHRU);
 #endif
-    PHP_MINIT(winsystem_registry)(INIT_FUNC_ARGS_PASSTHRU);
+	PHP_MINIT(winsystem_registry)(INIT_FUNC_ARGS_PASSTHRU);
 	return SUCCESS;
 }
 

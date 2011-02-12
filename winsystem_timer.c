@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2010 The PHP Group                                |
+  | Copyright (c) 1997-2011 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -27,17 +27,17 @@ static zend_function winsystem_timer_constructor_wrapper;
 VOID CALLBACK php_winsystem_timer_callback(LPVOID param, DWORD timerlow, DWORD timerhigh);
 
 /* ----------------------------------------------------------------
-  Win\System\Timer Userland API                                                    
+  Win\System\Timer Userland API
 ------------------------------------------------------------------*/
 ZEND_BEGIN_ARG_INFO_EX(WinSystemTimer___construct_args, ZEND_SEND_BY_VAL, ZEND_RETURN_VALUE, 0)
 	ZEND_ARG_INFO(0, name)
 	ZEND_ARG_INFO(0, auto_reset)
-    ZEND_ARG_INFO(0, process_inherit)
+	ZEND_ARG_INFO(0, process_inherit)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(WinSystemTimer_open_args, ZEND_SEND_BY_VAL, ZEND_RETURN_VALUE, 1)
 	ZEND_ARG_INFO(0, name)
-    ZEND_ARG_INFO(0, process_inherit)
+	ZEND_ARG_INFO(0, process_inherit)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO(WinSystemTimer_cancel_args, ZEND_SEND_BY_VAL)
@@ -47,7 +47,7 @@ ZEND_BEGIN_ARG_INFO(WinSystemTimer_set_args, ZEND_SEND_BY_VAL)
 	ZEND_ARG_INFO(0, interval)
 	ZEND_ARG_INFO(0, period)
 	ZEND_ARG_INFO(0, resume)
-    ZEND_ARG_INFO(0, callback)
+	ZEND_ARG_INFO(0, callback)
 	ZEND_ARG_INFO(0, ...)
 ZEND_END_ARG_INFO()
 
@@ -259,14 +259,15 @@ PHP_METHOD(WinSystemTimer, set)
 
 	/* This is dirty as sin, but I need to be able to tell if we hit a callback */
 	finfo.size = 0;
-	
+
 	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l|lbf*", &interval, &period, &resume, &finfo, &fcache, &args, &argc) == FAILURE) {
 		zend_restore_error_handling(&error_handling TSRMLS_CC);
 		return;
 	}
 	zend_restore_error_handling(&error_handling TSRMLS_CC);
-	
+
+	/* the earlier hack makes this not blow up, even if no callback is hit */
 	if (finfo.size > 0) {
 		if (argc) {
 			for(i = 0; i < argc; i++) {
@@ -277,12 +278,12 @@ PHP_METHOD(WinSystemTimer, set)
 					args[i] = newppzval;
 			}
 		}
-	
+
 		store = emalloc(sizeof(winsystem_timer_callback));
 
 		store->callback_info = finfo;
 		if (store->callback_info.object_ptr) {
-				zval_add_ref(&(store->callback_info.object_ptr));
+			zval_add_ref(&(store->callback_info.object_ptr));
 		}
 		zval_add_ref(&(store->callback_info.function_name));
 		store->callback_cache = fcache;
@@ -338,10 +339,10 @@ static zend_function_entry winsystem_timer_functions[] = {
 /* }}} */
 
 /* ----------------------------------------------------------------
-  Win\System\Timer C API                                                    
+  Win\System\Timer C API
 ------------------------------------------------------------------*/
 
-VOID CALLBACK php_winsystem_timer_callback(LPVOID param, DWORD timerlow, DWORD timerhigh) 
+VOID CALLBACK php_winsystem_timer_callback(LPVOID param, DWORD timerlow, DWORD timerhigh)
 {
 	if (param) {
 		zval *retval_ptr = NULL;
@@ -349,7 +350,6 @@ VOID CALLBACK php_winsystem_timer_callback(LPVOID param, DWORD timerlow, DWORD t
 #ifdef ZTS
 		TSRMLS_D = store->TSRMLS_C;
 #endif
-		
 		store->callback_info.retval_ptr_ptr = &retval_ptr;
 		if (FAILURE == zend_call_function(&(store->callback_info), &(store->callback_cache) TSRMLS_CC)) {
 			php_error(E_RECOVERABLE_ERROR, "Error calling %s", store->callback_info.function_name);
@@ -358,51 +358,53 @@ VOID CALLBACK php_winsystem_timer_callback(LPVOID param, DWORD timerlow, DWORD t
 } 
 
 /* ----------------------------------------------------------------
-  Win\System\Timer Object Magic LifeCycle Functions                                                    
+  Win\System\Timer Object Magic LifeCycle Functions
 ------------------------------------------------------------------*/
+
 /* {{{ winsystem_timer_construction_wrapper
        wraps around the constructor to make sure parent::__construct is always called  */
-static void winsystem_timer_construction_wrapper(INTERNAL_FUNCTION_PARAMETERS) {
-    zval *this = getThis();
-    winsystem_timer_object *tobj;
-    zend_class_entry *this_ce;
-    zend_function *zf;
-    zend_fcall_info fci = {0};
-    zend_fcall_info_cache fci_cache = {0};
-    zval *retval_ptr = NULL;
-    unsigned i;
+static void winsystem_timer_construction_wrapper(INTERNAL_FUNCTION_PARAMETERS)
+{
+	zval *this = getThis();
+	winsystem_timer_object *tobj;
+	zend_class_entry *this_ce;
+	zend_function *zf;
+	zend_fcall_info fci = {0};
+	zend_fcall_info_cache fci_cache = {0};
+	zval *retval_ptr = NULL;
+	unsigned i;
  
-    tobj = zend_object_store_get_object(this TSRMLS_CC);
-    zf = zend_get_std_object_handlers()->get_constructor(this TSRMLS_CC);
-    this_ce = Z_OBJCE_P(this);
+	tobj = zend_object_store_get_object(this TSRMLS_CC);
+	zf = zend_get_std_object_handlers()->get_constructor(this TSRMLS_CC);
+	this_ce = Z_OBJCE_P(this);
  
-    fci.size = sizeof(fci);
-    fci.function_table = &this_ce->function_table;
-    fci.object_ptr = this;
-    /* fci.function_name = ; not necessary to bother */
-    fci.retval_ptr_ptr = &retval_ptr;
-    fci.param_count = ZEND_NUM_ARGS();
-    fci.params = emalloc(fci.param_count * sizeof *fci.params);
-    /* Or use _zend_get_parameters_array_ex instead of loop: */
-    for (i = 0; i < fci.param_count; i++) {
-        fci.params[i] = (zval **) (zend_vm_stack_top(TSRMLS_C) - 1 -
-            (fci.param_count - i));
-    }
-    fci.object_ptr = this;
-    fci.no_separation = 0;
+	fci.size = sizeof(fci);
+	fci.function_table = &this_ce->function_table;
+	fci.object_ptr = this;
+	/* fci.function_name = ; not necessary to bother */
+	fci.retval_ptr_ptr = &retval_ptr;
+	fci.param_count = ZEND_NUM_ARGS();
+	fci.params = emalloc(fci.param_count * sizeof *fci.params);
+	/* Or use _zend_get_parameters_array_ex instead of loop: */
+	for (i = 0; i < fci.param_count; i++) {
+		fci.params[i] = (zval **) (zend_vm_stack_top(TSRMLS_C) - 1 -
+			(fci.param_count - i));
+	}
+	fci.object_ptr = this;
+	fci.no_separation = 0;
  
-    fci_cache.initialized = 1;
-    fci_cache.called_scope = EG(current_execute_data)->called_scope;
-    fci_cache.calling_scope = EG(current_execute_data)->current_scope;
-    fci_cache.function_handler = zf;
-    fci_cache.object_ptr = this;
+	fci_cache.initialized = 1;
+	fci_cache.called_scope = EG(current_execute_data)->called_scope;
+	fci_cache.calling_scope = EG(current_execute_data)->current_scope;
+	fci_cache.function_handler = zf;
+	fci_cache.object_ptr = this;
  
-    zend_call_function(&fci, &fci_cache TSRMLS_CC);
-    if (!EG(exception) && tobj->is_constructed == 0)
+	zend_call_function(&fci, &fci_cache TSRMLS_CC);
+	if (!EG(exception) && tobj->is_constructed == 0)
 		zend_throw_exception_ex(ce_winsystem_exception, 0 TSRMLS_CC,
 			"parent::__construct() must be called in %s::__construct()", this_ce->name);
-    efree(fci.params);
-    zval_ptr_dtor(&retval_ptr);
+	efree(fci.params);
+	zval_ptr_dtor(&retval_ptr);
 }
 /* }}} */
 
@@ -410,19 +412,19 @@ static void winsystem_timer_construction_wrapper(INTERNAL_FUNCTION_PARAMETERS) {
        gets the constructor for the class  */
 static zend_function *winsystem_timer_get_constructor(zval *object TSRMLS_DC)
 {
-    /* Could always return constr_wrapper_fun, but it's uncessary to call the
-     * wrapper if instantiating the superclass */
-    if (Z_OBJCE_P(object) == ce_winsystem_timer)
-        return zend_get_std_object_handlers()->
-            get_constructor(object TSRMLS_CC);
-    else
-        return &winsystem_timer_constructor_wrapper;
+	/* Could always return constr_wrapper_fun, but it's uncessary to call the
+	 * wrapper if instantiating the superclass */
+	if (Z_OBJCE_P(object) == ce_winsystem_timer)
+		return zend_get_std_object_handlers()->
+			get_constructor(object TSRMLS_CC);
+	else
+		return &winsystem_timer_constructor_wrapper;
 }
 /* }}} */
 
 /* {{{ winsystem_timer_object_free
        frees up the event handle underneath as well as any stored
-	   unicode object or string name */
+       unicode object or string name */
 static void winsystem_timer_object_free(void *object TSRMLS_DC)
 {
 	winsystem_timer_object *timer_object = (winsystem_timer_object *)object;
@@ -472,26 +474,26 @@ static void winsystem_timer_object_free(void *object TSRMLS_DC)
        object that has an internal HANDLE stored  */
 static zend_object_value winsystem_timer_object_create(zend_class_entry *ce TSRMLS_DC)
 {
-    zend_object_value          retval;
-    winsystem_timer_object     *timer_object;
+	zend_object_value          retval;
+	winsystem_timer_object     *timer_object;
  
 	timer_object = ecalloc(1, sizeof(winsystem_timer_object));
-    zend_object_std_init((zend_object *) timer_object, ce TSRMLS_CC);
+	zend_object_std_init((zend_object *) timer_object, ce TSRMLS_CC);
 	timer_object->handle = NULL;
 	timer_object->is_constructed = FALSE;
 	timer_object->can_inherit = FALSE;
 	timer_object->is_unicode = FALSE;
 	timer_object->store = NULL;
- 
-    zend_hash_copy(timer_object->std.properties, &(ce->default_properties),
-        (copy_ctor_func_t) zval_add_ref, NULL, sizeof(zval*));
- 
-    retval.handle = zend_objects_store_put(timer_object,
-        (zend_objects_store_dtor_t) zend_objects_destroy_object,
-        (zend_objects_free_object_storage_t) winsystem_timer_object_free,
-        NULL TSRMLS_CC);
-    retval.handlers = &winsystem_timer_object_handlers;
-    return retval;
+
+	zend_hash_copy(timer_object->std.properties, &(ce->default_properties),
+		(copy_ctor_func_t) zval_add_ref, NULL, sizeof(zval*));
+
+	retval.handle = zend_objects_store_put(timer_object,
+		(zend_objects_store_dtor_t) zend_objects_destroy_object,
+		(zend_objects_free_object_storage_t) winsystem_timer_object_free,
+		NULL TSRMLS_CC);
+	retval.handlers = &winsystem_timer_object_handlers;
+	return retval;
 }
 /* }}} */
 
@@ -501,18 +503,18 @@ static zend_object_value winsystem_timer_object_create(zend_class_entry *ce TSRM
 static zend_object_value winsystem_timer_object_clone(zval *this_ptr TSRMLS_DC)
 {
 	zend_object_value          retval;
-    winsystem_timer_object     *new_timer_object;
+	winsystem_timer_object     *new_timer_object;
 	winsystem_timer_object     *old_timer_object = (winsystem_timer_object *) zend_object_store_get_object(this_ptr TSRMLS_CC);
  
 	new_timer_object = ecalloc(1, sizeof(winsystem_timer_object));
-    zend_object_std_init((zend_object *) new_timer_object, old_timer_object->std.ce TSRMLS_CC);
+	zend_object_std_init((zend_object *) new_timer_object, old_timer_object->std.ce TSRMLS_CC);
 	DuplicateHandle(GetCurrentProcess(), 
-                    old_timer_object->handle, 
-                    GetCurrentProcess(),
-                    &new_timer_object->handle, 
-                    0, /* Ignored, we're using same_access */
-                    old_timer_object->can_inherit,
-                    DUPLICATE_SAME_ACCESS);
+					old_timer_object->handle, 
+					GetCurrentProcess(),
+					&new_timer_object->handle, 
+					0, /* Ignored, we're using same_access */
+					old_timer_object->can_inherit,
+					DUPLICATE_SAME_ACCESS);
 
 	new_timer_object->can_inherit = old_timer_object->can_inherit;
 	new_timer_object->is_constructed = TRUE;
@@ -532,17 +534,17 @@ static zend_object_value winsystem_timer_object_clone(zval *this_ptr TSRMLS_DC)
 		new_timer_object->name.string = estrdup(old_timer_object->name.string);
 	}
  
-    zend_hash_copy(new_timer_object->std.properties, &(old_timer_object->std.ce->default_properties),
-        (copy_ctor_func_t) zval_add_ref, NULL, sizeof(zval*));
+	zend_hash_copy(new_timer_object->std.properties, &(old_timer_object->std.ce->default_properties),
+		(copy_ctor_func_t) zval_add_ref, NULL, sizeof(zval*));
  
-    retval.handle = zend_objects_store_put(new_timer_object,
-        (zend_objects_store_dtor_t) zend_objects_destroy_object,
-        (zend_objects_free_object_storage_t) winsystem_timer_object_free,
-        NULL TSRMLS_CC);
-    retval.handlers = &winsystem_timer_object_handlers;
+	retval.handle = zend_objects_store_put(new_timer_object,
+		(zend_objects_store_dtor_t) zend_objects_destroy_object,
+		(zend_objects_free_object_storage_t) winsystem_timer_object_free,
+		NULL TSRMLS_CC);
+	retval.handlers = &winsystem_timer_object_handlers;
 
 	zend_objects_clone_members(&new_timer_object->std, retval, zend_objects_get_address(this_ptr TSRMLS_CC), Z_OBJ_HANDLE_P(this_ptr) TSRMLS_CC);
-	return retval; 
+	return retval;
 }
 /* }}} */
 
@@ -558,15 +560,15 @@ static HashTable *winsystem_timer_get_debug_info(zval *obj, int *is_temp TSRMLS_
 	int can_inherit_len, name_len;
 
 	ALLOC_HASHTABLE(retval);
-    zend_hash_init(retval, 1, NULL, ZVAL_PTR_DTOR, 0);
-    zend_hash_copy(retval, timer->std.properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
+	zend_hash_init(retval, 1, NULL, ZVAL_PTR_DTOR, 0);
+	zend_hash_copy(retval, timer->std.properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
 
 	zend_mangle_property_name(&can_inherit, &can_inherit_len, 
 	timer->std.ce->name, timer->std.ce->name_length, "canInherit", sizeof("canInherit") -1, 0);
 	MAKE_STD_ZVAL(tmp);
 	ZVAL_BOOL(tmp, timer->can_inherit);
 	zend_hash_update(retval, can_inherit, can_inherit_len + 1, &tmp, sizeof(zval*), NULL);
-    efree(can_inherit);
+	efree(can_inherit);
 
 	zend_mangle_property_name(&name, &name_len, 
 	timer->std.ce->name, timer->std.ce->name_length, "name", sizeof("name") -1, 0);
@@ -579,23 +581,23 @@ static HashTable *winsystem_timer_get_debug_info(zval *obj, int *is_temp TSRMLS_
 		ZVAL_STRING(tmp, timer->name.string, 1);
 		zend_hash_update(retval, name, name_len + 1, &tmp, sizeof(zval*), NULL);
 	}
-    efree(name);
+	efree(name);
 
 	*is_temp = 1;
-    return retval; 
+	return retval; 
 }
 /* }}} */
 
 /* ----------------------------------------------------------------
-  Win\System\Timer LifeCycle Functions                                                    
+  Win\System\Timer LifeCycle Functions
 ------------------------------------------------------------------*/
 PHP_MINIT_FUNCTION(winsystem_timer)
 {
 	zend_class_entry ce;
 
 	memcpy(&winsystem_timer_object_handlers, zend_get_std_object_handlers(),
-        sizeof winsystem_timer_object_handlers);
-    winsystem_timer_object_handlers.get_constructor = winsystem_timer_get_constructor;
+		sizeof winsystem_timer_object_handlers);
+	winsystem_timer_object_handlers.get_constructor = winsystem_timer_get_constructor;
 	winsystem_timer_object_handlers.clone_obj = winsystem_timer_object_clone;
 	winsystem_timer_object_handlers.get_debug_info = winsystem_timer_get_debug_info;
 	
@@ -604,17 +606,17 @@ PHP_MINIT_FUNCTION(winsystem_timer)
 	zend_class_implements(ce_winsystem_timer TSRMLS_CC, 1, ce_winsystem_waitable);
 	ce_winsystem_timer->create_object = winsystem_timer_object_create;
  
-    winsystem_timer_constructor_wrapper.type = ZEND_INTERNAL_FUNCTION;
-    winsystem_timer_constructor_wrapper.common.function_name = "internal_construction_wrapper";
-    winsystem_timer_constructor_wrapper.common.scope = ce_winsystem_timer;
-    winsystem_timer_constructor_wrapper.common.fn_flags = ZEND_ACC_PROTECTED;
-    winsystem_timer_constructor_wrapper.common.prototype = NULL;
-    winsystem_timer_constructor_wrapper.common.required_num_args = 0;
-    winsystem_timer_constructor_wrapper.common.arg_info = NULL;
-    winsystem_timer_constructor_wrapper.common.pass_rest_by_reference = 0;
-    winsystem_timer_constructor_wrapper.common.return_reference = 0;
-    winsystem_timer_constructor_wrapper.internal_function.handler = winsystem_timer_construction_wrapper;
-    winsystem_timer_constructor_wrapper.internal_function.module = EG(current_module);
+	winsystem_timer_constructor_wrapper.type = ZEND_INTERNAL_FUNCTION;
+	winsystem_timer_constructor_wrapper.common.function_name = "internal_construction_wrapper";
+	winsystem_timer_constructor_wrapper.common.scope = ce_winsystem_timer;
+	winsystem_timer_constructor_wrapper.common.fn_flags = ZEND_ACC_PROTECTED;
+	winsystem_timer_constructor_wrapper.common.prototype = NULL;
+	winsystem_timer_constructor_wrapper.common.required_num_args = 0;
+	winsystem_timer_constructor_wrapper.common.arg_info = NULL;
+	winsystem_timer_constructor_wrapper.common.pass_rest_by_reference = 0;
+	winsystem_timer_constructor_wrapper.common.return_reference = 0;
+	winsystem_timer_constructor_wrapper.internal_function.handler = winsystem_timer_construction_wrapper;
+	winsystem_timer_constructor_wrapper.internal_function.module = EG(current_module);
 
 	return SUCCESS;
 }

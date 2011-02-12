@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2010 The PHP Group                                |
+  | Copyright (c) 1997-2011 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -38,11 +38,11 @@ int php_winsystem_thread_copy_zval(zval **retval, zval *src, void ***prev_tsrm_l
 static void winsystem_finish_thread(void *data);
 
 /* ----------------------------------------------------------------
-  Win\System\Thread Userland API                                                    
+  Win\System\Thread Userland API
 ------------------------------------------------------------------*/
 
 ZEND_BEGIN_ARG_INFO(WinSystemThread_start_args, ZEND_SEND_BY_VAL)
-    ZEND_ARG_INFO(0, callback)
+	ZEND_ARG_INFO(0, callback)
 	ZEND_ARG_INFO(0, ...)
 ZEND_END_ARG_INFO()
 
@@ -107,13 +107,13 @@ PHP_METHOD(WinSystemThread, start)
 	}
 
 	/* Create the thread and store the handle in our new object */
-	thread_handle = (HANDLE) _beginthreadex( 
-            &thread_attributes,                   
-            0,                      
-            php_winsystem_thread_callback,       
-            thread_callback_data, 
-            0,
-            &thread_id);
+	thread_handle = (HANDLE) _beginthreadex(
+			&thread_attributes,
+			0,
+			php_winsystem_thread_callback,
+			thread_callback_data,
+			0,
+			&thread_id);
 
 	/* Wait for the "event start" to be done in the new thread*/
 	WaitForSingleObject(thread_callback_data->start_event, INFINITE);
@@ -131,8 +131,8 @@ PHP_METHOD(WinSystemThread, start)
 
 /* {{{ proto bool Win\System\Thread::set()
        final static method that will place data into a global data store
-	   so it can be shared between threads - this will SERIALIZE any non-scalar data
-	   coming in */
+       so it can be shared between threads - this will SERIALIZE any non-scalar data
+       coming in */
 PHP_METHOD(WinSystemThread, set)
 {
 	char *var_name;
@@ -147,7 +147,7 @@ PHP_METHOD(WinSystemThread, set)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz", &var_name, &var_name_length, &var) == FAILURE) {
 		zend_restore_error_handling(&error_handling TSRMLS_CC);
 		return;
-	} 
+	}
 	zend_restore_error_handling(&error_handling TSRMLS_CC);
 
 	/* serialize variables that will be shared */
@@ -182,7 +182,7 @@ PHP_METHOD(WinSystemThread, get)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &var_name, &var_name_length) == FAILURE) {
 		zend_restore_error_handling(&error_handling TSRMLS_CC);
 		return;
-	} 
+	}
 	zend_restore_error_handling(&error_handling TSRMLS_CC);
 
 	/* grab the string from the hash */
@@ -210,7 +210,7 @@ PHP_METHOD(WinSystemThread, isset)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &var_name, &var_name_length) == FAILURE) {
 		zend_restore_error_handling(&error_handling TSRMLS_CC);
 		return;
-	} 
+	}
 	zend_restore_error_handling(&error_handling TSRMLS_CC);
 
 	/* do zend_hash_exists */
@@ -230,7 +230,7 @@ PHP_METHOD(WinSystemThread, unset)
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &var_name, &var_name_length) == FAILURE) {
 		zend_restore_error_handling(&error_handling TSRMLS_CC);
 		return;
-	} 
+	}
 	zend_restore_error_handling(&error_handling TSRMLS_CC);
 
 	/* delete it */
@@ -254,7 +254,7 @@ static zend_function_entry winsystem_thread_functions[] = {
 /* }}} */
 
 /* ----------------------------------------------------------------
-  Win\System\Thread C API                                                    
+  Win\System\Thread C API
 ------------------------------------------------------------------*/
 
 zend_object_value php_winsystem_thread_clone(zval *zobject, void ***prev_tsrm_ls TSRMLS_DC)
@@ -378,12 +378,14 @@ static int php_winsystem_thread_copy_zval(zval **retval, zval *src,
 	Z_SET_REFCOUNT_P(*retval, 1);
 	Z_UNSET_ISREF_P(*retval);
 	return SUCCESS;
+
 fail:
 	FREE_ZVAL(*retval);
 	return FAILURE;
 }
 /* }}} */
-void zend_class_add_ref(zend_class_entry **ce)
+
+static void zend_class_add_ref(zend_class_entry **ce)
 {
 	(*ce)->refcount++;
 }
@@ -435,7 +437,7 @@ static DWORD WINAPI php_winsystem_thread_callback(LPVOID lpParam)
 	callable.object_ptr = NULL;
 	callable.no_separation = 1;
 	callable.function_name = NULL;
-    
+
 	/* Just as if we were doing another whole PHP interpreter */
 	php_request_startup(TSRMLS_C);
 
@@ -518,7 +520,7 @@ out:
 
 	_endthreadex(0);
 
-    return 0;
+	return 0;
 } 
 
 /* Simple function to take a child thread, wait for it to finish, then destroy the
@@ -535,7 +537,7 @@ static void winsystem_finish_thread(void *data)
 }
 
 /* ----------------------------------------------------------------
-  Win\System\Thread LifeCycle Functions                                                    
+  Win\System\Thread LifeCycle Functions
 ------------------------------------------------------------------*/
 PHP_MINIT_FUNCTION(winsystem_thread)
 {

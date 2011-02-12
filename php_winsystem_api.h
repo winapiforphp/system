@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 2007-2008 Elizabeth M. Smith, Sara Golemon, Tom Rogers |
+  | Copyright (c) 1997-2011 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -12,7 +12,7 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author: Elizabeth M. Smith <auroraeosrose@php.net>                   |
+  | Author: Elizabeth Smith <auroraeosrose@php.net>                      |
   +----------------------------------------------------------------------+
 */
 
@@ -29,9 +29,9 @@
 
 /* Generic object - all object's that want sexy property read/write callbacks should have this header */
 typedef struct _winsystem_generic_object {
-    zend_object        std;
-    zend_object_handle zobject_handle;
-    HashTable          *prop_handler;
+	zend_object        std;
+	zend_object_handle zobject_handle;
+	HashTable          *prop_handler;
 } winsystem_generic_object;
 
 /* Names in most things can be either a string or unicode object */
@@ -117,7 +117,7 @@ typedef struct _winsystem_timerqueue_object {
 	zend_bool      is_constructed;
 	HANDLE         handle;
 	zval           *event;
-	HashTable	   *timers;
+	HashTable      *timers;
 } winsystem_timerqueue_object;
 
 /* Data structure for threads information */

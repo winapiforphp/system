@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 2007-2008 Elizabeth M. Smith, Sara Golemon, Tom Rogers |
+  | Copyright (c) 1997-2011 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -12,7 +12,7 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author: Elizabeth M. Smith <auroraeosrose@php.net>                   |
+  | Author: Elizabeth Smith <auroraeosrose@php.net>                      |
   +----------------------------------------------------------------------+
 */
 
@@ -39,13 +39,13 @@
 #include "php_winsystem_api.h"
 
 /* ----------------------------------------------------------------
-  Typedefs                                               
+  Typedefs
 ------------------------------------------------------------------*/
 #define PHP_WINSYSTEM_NS ZEND_NS_NAME("Win", "System")
 #define PHP_WINSYSTEM_SERVICE_NS ZEND_NS_NAME(PHP_WINSYSTEM_NS, "Service")
 
 /* ----------------------------------------------------------------
-  Property Magic                                            
+  Property Magic
 ------------------------------------------------------------------*/
 
 /* Property read/write callbacks */
@@ -54,25 +54,25 @@ typedef int (* winsystem_prop_write_t)(winsystem_generic_object *object, zval *m
 
 /* Container for read/write callback */
 typedef struct _winsystem_prop_handler {
-    winsystem_prop_read_t  read_func;
-    winsystem_prop_write_t write_func;
+	winsystem_prop_read_t  read_func;
+	winsystem_prop_write_t write_func;
 } winsystem_prop_handler;
 
 /* Registers the read and write handlers for a class's property */
 static inline void winsystem_register_prop_handler(HashTable *prop_handlers, zend_class_entry *ce, char *prop_name, 
-                                                   winsystem_prop_read_t read_func, winsystem_prop_write_t write_func TSRMLS_DC)
+												   winsystem_prop_read_t read_func, winsystem_prop_write_t write_func TSRMLS_DC)
 {
-    winsystem_prop_handler handler;
+	winsystem_prop_handler handler;
 
-    handler.read_func  = read_func;
-    handler.write_func = write_func;
+	handler.read_func  = read_func;
+	handler.write_func = write_func;
 
-    zend_hash_add(prop_handlers, prop_name, strlen(prop_name) + 1, &handler, sizeof(winsystem_prop_handler), NULL);
-    zend_declare_property_null(ce, prop_name, strlen(prop_name), ZEND_ACC_PUBLIC TSRMLS_CC);
+	zend_hash_add(prop_handlers, prop_name, strlen(prop_name) + 1, &handler, sizeof(winsystem_prop_handler), NULL);
+	zend_declare_property_null(ce, prop_name, strlen(prop_name), ZEND_ACC_PUBLIC TSRMLS_CC);
 }
 
 /* ----------------------------------------------------------------
-  Class Entries                                              
+  Class Entries
 ------------------------------------------------------------------*/
 extern zend_class_entry *ce_winsystem_event;
 extern zend_class_entry *ce_winsystem_waitable;
@@ -84,10 +84,10 @@ extern zend_class_entry *ce_winsystem_service_controller;
 extern zend_object_handlers winsystem_object_handlers;
 
 /* ----------------------------------------------------------------
-  Object Globals, lifecycle and static linking                    
+  Object Globals, lifecycle and static linking
 ------------------------------------------------------------------*/
 ZEND_BEGIN_MODULE_GLOBALS(winsystem)
-    zend_llist processes;
+	zend_llist processes;
 	zend_llist threads;
 	DWORD process_id;
 	DWORD thread_id;

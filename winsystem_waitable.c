@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2010 The PHP Group                                |
+  | Copyright (c) 1997-2011 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -25,20 +25,20 @@ zend_class_entry *ce_winsystem_wait;
 zend_class_entry *ce_winsystem_waitmask;
 
 /* ----------------------------------------------------------------
-  \Win\System\Wait Userland API                                                    
+  \Win\System\Wait Userland API
 ------------------------------------------------------------------*/
 ZEND_BEGIN_ARG_INFO_EX(WinSystemWait_multiple_args, ZEND_SEND_BY_VAL, ZEND_RETURN_VALUE, 1)
 	ZEND_ARG_INFO(0, objects)
 	ZEND_ARG_INFO(0, milliseconds)
-    ZEND_ARG_INFO(0, wait_all)
-    ZEND_ARG_INFO(0, alertable)
+	ZEND_ARG_INFO(0, wait_all)
+	ZEND_ARG_INFO(0, alertable)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(WinSystemWait_multipleMsg_args, ZEND_SEND_BY_VAL, ZEND_RETURN_VALUE, 1)
 	ZEND_ARG_INFO(0, objects)
 	ZEND_ARG_INFO(0, milliseconds)
-    ZEND_ARG_INFO(0, mask)
-    ZEND_ARG_INFO(0, flags)
+	ZEND_ARG_INFO(0, mask)
+	ZEND_ARG_INFO(0, flags)
 ZEND_END_ARG_INFO()
 
 /* {{{ proto int Win\System\Wait::multiple(array $objects[, int $milliseconds, bool $wait_all, bool $alertable])
@@ -83,7 +83,7 @@ PHP_METHOD(WinSystemWait, multiple)
 
 		if (i == MAXIMUM_WAIT_OBJECTS)
 			break;
-    }
+	}
 
 	if (i < 1) {
 		zend_throw_exception(ce_winsystem_argexception, "No objects were registered to watch", 0 TSRMLS_CC);
@@ -142,7 +142,7 @@ PHP_METHOD(WinSystemWait, multipleMsg)
 
 		if (i == MAXIMUM_WAIT_OBJECTS)
 			break;
-    }
+	}
 
 	if (i < 1) {
 		zend_throw_exception(ce_winsystem_argexception, "No objects were registered to watch", 0 TSRMLS_CC);
@@ -167,7 +167,7 @@ static zend_function_entry winsystem_wait_functions[] = {
 /* }}} */
 
 /* ----------------------------------------------------------------
-  \Win\System\Waitable Userland API                                                    
+  \Win\System\Waitable Userland API
 ------------------------------------------------------------------*/
 
 /* {{{ proto bool Win\System\Waitable->wait([int $milliseconds, bool $alertable])
@@ -273,7 +273,7 @@ static zend_function_entry winsystem_waitable_functions[] = {
 /* }}} */
 
 /* ----------------------------------------------------------------
-  Win\System\Waitable LifeCycle Functions                                                    
+  Win\System\Waitable LifeCycle Functions
 ------------------------------------------------------------------*/
 PHP_MINIT_FUNCTION(winsystem_waitable)
 {

@@ -1,7 +1,5 @@
-Spreadsheet with C -> PHP mappings
-
 Process control support
-Threading (FOR TS PHP versions ONLY)
+Threading (FOR TS PHP versions ONLY) - locking fixes and additional methods
 Basic Windows System Information (OS and other info)
 Registry Access
 Syncronization (semaphores, locks, etc - SOME ITEMS ONLY AVAILABLE IN TS PHP)

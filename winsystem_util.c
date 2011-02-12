@@ -27,22 +27,23 @@ zend_class_entry *ce_winsystem_argexception;
 zend_class_entry *ce_winsystem_versionexception;
 zend_object_handlers winsystem_object_handlers;
 
-/* {{{ winsystem_create_error - grabs a message from GetLastError int and throws an exception with it */
+/* {{{ winsystem_create_error - grabs a message from GetLastError int and
+       throws an exception with it */
 PHP_WINSYSTEM_API void winsystem_create_error(int error, zend_class_entry *ce TSRMLS_DC)
 {
 	DWORD ret;
 	char * buffer = NULL;
 
-	/* Get a system message from the getlasterror value, tell windows to allocate the buffer, and don't
-	   sprintf in any args */
+	/* Get a system message from the getlasterror value, tell windows to allocate
+	   the buffer, and don't sprintf in any args */
 	ret = FormatMessage( 
-		FORMAT_MESSAGE_ALLOCATE_BUFFER |           
-		FORMAT_MESSAGE_IGNORE_INSERTS |            
-		FORMAT_MESSAGE_FROM_SYSTEM,                
-		NULL,                       
-		error,                                     
+		FORMAT_MESSAGE_ALLOCATE_BUFFER |
+		FORMAT_MESSAGE_IGNORE_INSERTS |
+		FORMAT_MESSAGE_FROM_SYSTEM,
+		NULL, 
+		error,
 		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-		(LPSTR)&buffer,                           
+		(LPSTR)&buffer,
 		0,
 		NULL);
 
@@ -107,17 +108,17 @@ zval *winsystem_object_read_property(zval *object, zval *member, int type TSRMLS
 	}
 
 	if (worked == SUCCESS) {
-        if (hnd->read_func != NULL) {
-            worked = hnd->read_func(generic_object, member, &retval TSRMLS_CC);
-		    if (worked == SUCCESS) {
-		    	Z_SET_REFCOUNT_P(retval, 0);
-			    Z_UNSET_ISREF_P(retval);
-		    } else {
-		    	retval = EG(uninitialized_zval_ptr);
-		    }
-        } else {
-            retval = std_object_handlers.read_property(object, member, 0 TSRMLS_CC);
-        }
+		if (hnd->read_func != NULL) {
+			worked = hnd->read_func(generic_object, member, &retval TSRMLS_CC);
+			if (worked == SUCCESS) {
+	    		Z_SET_REFCOUNT_P(retval, 0);
+				Z_UNSET_ISREF_P(retval);
+			} else {
+	    		retval = EG(uninitialized_zval_ptr);
+			}
+		} else {
+			retval = std_object_handlers.read_property(object, member, 0 TSRMLS_CC);
+		}
 	} else {
 		retval = std_object_handlers.read_property(object, member, 0 TSRMLS_CC);
 	}
@@ -240,9 +241,9 @@ PHP_MINIT_FUNCTION(winsystem_util)
 	INIT_NS_CLASS_ENTRY(version_ce, PHP_WINSYSTEM_NS, "VersionException", NULL);
 	ce_winsystem_versionexception = zend_register_internal_class_ex(&version_ce, spl_ce_RuntimeException, "RuntimeException" TSRMLS_CC);
 
-    memcpy(&winsystem_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
+	memcpy(&winsystem_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 	winsystem_object_handlers.get_property_ptr_ptr = winsystem_object_get_property_ptr_ptr;
-    winsystem_object_handlers.unset_property = winsystem_object_delete_property;
+	winsystem_object_handlers.unset_property = winsystem_object_delete_property;
 	winsystem_object_handlers.write_property = winsystem_object_write_property;
 	winsystem_object_handlers.read_property  = winsystem_object_read_property;
 	winsystem_object_handlers.has_property   = winsystem_object_property_exists;

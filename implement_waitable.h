@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 2007-2008 Elizabeth M. Smith, Sara Golemon, Tom Rogers |
+  | Copyright (c) 1997-2011 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -12,7 +12,7 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author: Elizabeth M. Smith <auroraeosrose@php.net>                   |
+  | Author: Elizabeth Smith <auroraeosrose@php.net>                      |
   +----------------------------------------------------------------------+
 */
 
@@ -21,19 +21,19 @@
 
 ZEND_BEGIN_ARG_INFO_EX(WinSystemWaitable_wait_args, ZEND_SEND_BY_VAL, ZEND_RETURN_VALUE, 0)
 	ZEND_ARG_INFO(0, milliseconds)
-    ZEND_ARG_INFO(0, alertable)
+	ZEND_ARG_INFO(0, alertable)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(WinSystemWaitable_waitMsg_args, ZEND_SEND_BY_VAL, ZEND_RETURN_VALUE, 0)
 	ZEND_ARG_INFO(0, milliseconds)
-    ZEND_ARG_INFO(0, mask)
-    ZEND_ARG_INFO(0, alertable)
+	ZEND_ARG_INFO(0, mask)
+	ZEND_ARG_INFO(0, alertable)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(WinSystemWaitable_signalAndWait_args, ZEND_SEND_BY_VAL, ZEND_RETURN_VALUE, 1)
 	ZEND_ARG_INFO(0, signal)
 	ZEND_ARG_INFO(0, milliseconds)
-    ZEND_ARG_INFO(0, alertable)
+	ZEND_ARG_INFO(0, alertable)
 ZEND_END_ARG_INFO()
 
 extern PHP_METHOD(WinSystemWaitable, wait);

@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2010 The PHP Group                                |
+  | Copyright (c) 1997-2011 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -26,7 +26,7 @@ ZEND_DECLARE_MODULE_GLOBALS(winsystem);
 zend_class_entry *ce_winsystem_process;
 
 /* ----------------------------------------------------------------
-  Win\System\Process Userland API                                                    
+  Win\System\Process Userland API
 ------------------------------------------------------------------*/
 
 ZEND_BEGIN_ARG_INFO(WinSystemProcess_run_args, ZEND_SEND_BY_VAL)
@@ -52,7 +52,7 @@ static zend_function_entry winsystem_process_functions[] = {
 /* }}} */
 
 /* ----------------------------------------------------------------
-  Win\System\Process LifeCycle Functions                                                    
+  Win\System\Process LifeCycle Functions
 ------------------------------------------------------------------*/
 PHP_MINIT_FUNCTION(winsystem_process)
 {
