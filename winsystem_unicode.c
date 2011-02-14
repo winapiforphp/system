@@ -377,10 +377,10 @@ PHP_MINIT_FUNCTION(winsystem_unicode)
 	zend_declare_class_constant_long(ce_winsystem_codepage, "X_CP20004",      sizeof("X_CP20004")-1,      20004 TSRMLS_CC);
 	zend_declare_class_constant_long(ce_winsystem_codepage, "X_CP20005",      sizeof("X_CP20005")-1,      20005 TSRMLS_CC);
 
-	zend_declare_class_constant_long(ce_winsystem_codepage, "X_IA5",           sizeof("X_IA5")-1,           20105 TSRMLS_CC);
-	zend_declare_class_constant_long(ce_winsystem_codepage, "X_IA5_GERMAN",    sizeof("X_IA5_GERMAN")-1,    20106 TSRMLS_CC);
-	zend_declare_class_constant_long(ce_winsystem_codepage, "X_IA5_SWEDISH",   sizeof("X_IA5_SWEDISH")-1,   20107 TSRMLS_CC);
-	zend_declare_class_constant_long(ce_winsystem_codepage, "X_IA5_NORWEGIAN", sizeof("X_IA5_NORWEGIAN")-1, 20108 TSRMLS_CC);
+	zend_declare_class_constant_long(ce_winsystem_codepage, "X_IA5",           sizeof("X_IA5")-1,           20115 TSRMLS_CC);
+	zend_declare_class_constant_long(ce_winsystem_codepage, "X_IA5_GERMAN",    sizeof("X_IA5_GERMAN")-1,    20116 TSRMLS_CC);
+	zend_declare_class_constant_long(ce_winsystem_codepage, "X_IA5_SWEDISH",   sizeof("X_IA5_SWEDISH")-1,   20117 TSRMLS_CC);
+	zend_declare_class_constant_long(ce_winsystem_codepage, "X_IA5_NORWEGIAN", sizeof("X_IA5_NORWEGIAN")-1, 20118 TSRMLS_CC);
 
 	zend_declare_class_constant_long(ce_winsystem_codepage, "US_ASCII",        sizeof("US_ASCII")-1,        20127 TSRMLS_CC);
 	zend_declare_class_constant_long(ce_winsystem_codepage, "X_CP20261",       sizeof("X_CP20261")-1,       20261 TSRMLS_CC);
