@@ -355,7 +355,7 @@ VOID CALLBACK php_winsystem_timer_callback(LPVOID param, DWORD timerlow, DWORD t
 			php_error(E_RECOVERABLE_ERROR, "Error calling %s", store->callback_info.function_name);
 		}
 	}
-} 
+}
 
 /* ----------------------------------------------------------------
   Win\System\Timer Object Magic LifeCycle Functions
