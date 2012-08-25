@@ -148,21 +148,17 @@ static zend_object_value winsystem_service_controller_object_create(zend_class_e
 {
     zend_object_value retval;
     winsystem_service_controller_object *object;
-    zval *tmp;
 
     object = ecalloc(1, sizeof(winsystem_service_controller_object));
+	zend_object_std_init(&object->std, ce TSRMLS_CC);
     object->std.ce = ce;
     object->std.guards = NULL;
 
-    ALLOC_HASHTABLE(object->std.properties);
-    zend_hash_init(object->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
-    zend_hash_copy(object->std.properties, &ce->default_properties,
-        (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
+   object_properties_init(&object->std, ce);
 
     retval.handle = zend_objects_store_put(object, (zend_objects_store_dtor_t) zend_objects_destroy_object,
         (zend_objects_free_object_storage_t) winsystem_service_controller_object_destroy, NULL TSRMLS_CC);
     retval.handlers = &winsystem_object_handlers;
-    object->zobject_handle = retval.handle;
     return retval;
 }
 

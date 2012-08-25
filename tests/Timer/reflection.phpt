@@ -42,21 +42,23 @@ Class [ <internal:winsystem> class Win\System\Timer implements Win\System\Waitab
 
     Method [ <internal:winsystem> public method cancel ] {
 
-      - Parameters [4] {
+      - Parameters [5] {
         Parameter #0 [ <required> $interval ]
         Parameter #1 [ <required> $period ]
         Parameter #2 [ <required> $resume ]
         Parameter #3 [ <required> $callback ]
+        Parameter #4 [ <required> $... ]
       }
     }
 
     Method [ <internal:winsystem> public method set ] {
 
-      - Parameters [4] {
+      - Parameters [5] {
         Parameter #0 [ <required> $interval ]
         Parameter #1 [ <required> $period ]
         Parameter #2 [ <required> $resume ]
         Parameter #3 [ <required> $callback ]
+        Parameter #4 [ <required> $... ]
       }
     }
 

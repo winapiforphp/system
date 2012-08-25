@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2011 The PHP Group                                |
+  | Copyright (c) 1997-2012 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -12,15 +12,24 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author: Elizabeth Smith <auroraeosrose@php.net>                      |
+  | Author: Elizabeth Smith <auroraeosrose@gmail.net>                    |
   +----------------------------------------------------------------------+
 */
 
 #ifndef PHP_WINSYSTEM_H
 #define PHP_WINSYSTEM_H
 
+#undef _WIN32_WINNT
+#undef NTDDI_VERSION
+#define _WIN32_WINNT 0x0600 /* Vista */
+#define NTDDI_VERSION  NTDDI_VISTA /* Vista */
+
+#define _USE_32BIT_TIME_T 1 /* keeps windows.h from spewing errors */
+#define _WINSOCKAPI_ /* keep windows.h from spewing errors */
+#include <Windows.h> /* Include this FIRST we want vista stuff! */
+
 /* version info file */
-#include "winsystem_version.h"
+#include "version.h"
 
 /* Needed PHP includes */
 #include "php.h"
@@ -36,7 +45,7 @@
 #endif
 
 /* Externally useable APIS*/
-#include "php_winsystem_api.h"
+#include "php_winsystem_public.h"
 
 /* ----------------------------------------------------------------
   Typedefs
@@ -109,6 +118,7 @@ PHP_MINIT_FUNCTION(winsystem_timerqueue);
 PHP_MINIT_FUNCTION(winsystem_thread);
 PHP_MINIT_FUNCTION(winsystem_unicode);
 PHP_MINIT_FUNCTION(winsystem_registry);
+PHP_MINIT_FUNCTION(winsystem_service_controller);
 
 PHP_RINIT_FUNCTION(winsystem_thread);
 PHP_RSHUTDOWN_FUNCTION(winsystem_thread);

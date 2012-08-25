@@ -240,13 +240,12 @@ static zend_object_value winsystem_unicode_object_create(zend_class_entry *ce TS
 	winsystem_unicode_object       *unicode_object;
  
 	unicode_object = ecalloc(1, sizeof(winsystem_unicode_object));
-	zend_object_std_init((zend_object *) unicode_object, ce TSRMLS_CC);
+	zend_object_std_init(&unicode_object->std, ce TSRMLS_CC);
 	unicode_object->unicode_string = NULL;
 	unicode_object->multibyte_string = NULL;
 	unicode_object->is_constructed = FALSE;
  
-	zend_hash_copy(unicode_object->std.properties, &(ce->default_properties),
-		(copy_ctor_func_t) zval_add_ref, NULL, sizeof(zval*));
+	object_properties_init(&unicode_object->std, ce);
  
 	retval.handle = zend_objects_store_put(unicode_object,
 		(zend_objects_store_dtor_t) zend_objects_destroy_object,
@@ -280,8 +279,6 @@ PHP_MINIT_FUNCTION(winsystem_unicode)
 	winsystem_unicode_constructor_wrapper.common.prototype = NULL;
 	winsystem_unicode_constructor_wrapper.common.required_num_args = 0;
 	winsystem_unicode_constructor_wrapper.common.arg_info = NULL;
-	winsystem_unicode_constructor_wrapper.common.pass_rest_by_reference = 0;
-	winsystem_unicode_constructor_wrapper.common.return_reference = 0;
 	winsystem_unicode_constructor_wrapper.internal_function.handler = construction_wrapper;
 	winsystem_unicode_constructor_wrapper.internal_function.module = EG(current_module);
 

@@ -93,7 +93,7 @@ PHP_WINSYSTEM_API int winsystem_juggle_type(zval *value, int type TSRMLS_DC)
 }
 /* }}} */
 
-zval *winsystem_object_read_property(zval *object, zval *member, int type TSRMLS_DC)
+zval *winsystem_object_read_property(zval *object, zval *member, int type, const zend_literal *key TSRMLS_DC)
 {
 	zval *retval;
 	winsystem_prop_handler *hnd = NULL;
@@ -117,16 +117,16 @@ zval *winsystem_object_read_property(zval *object, zval *member, int type TSRMLS
 	    		retval = EG(uninitialized_zval_ptr);
 			}
 		} else {
-			retval = std_object_handlers.read_property(object, member, 0 TSRMLS_CC);
+			retval = std_object_handlers.read_property(object, member, type, key TSRMLS_CC);
 		}
 	} else {
-		retval = std_object_handlers.read_property(object, member, 0 TSRMLS_CC);
+		retval = std_object_handlers.read_property(object, member, type, key TSRMLS_CC);
 	}
 
 	return retval;
 }
 
-zval **winsystem_object_get_property_ptr_ptr(zval *object, zval *member TSRMLS_DC)
+zval **winsystem_object_get_property_ptr_ptr(zval *object, zval *member, const zend_literal *key TSRMLS_DC)
 {
 	zval**retval = NULL;
 	winsystem_prop_handler *hnd;
@@ -141,12 +141,12 @@ zval **winsystem_object_get_property_ptr_ptr(zval *object, zval *member TSRMLS_D
 		worked = zend_hash_find(generic_object->prop_handler, Z_STRVAL_P(member), Z_STRLEN_P(member)+1, (void **) &hnd);
 	}
 	if (worked == FAILURE) {
-		retval = std_object_handlers.get_property_ptr_ptr(object, member TSRMLS_CC);
+		retval = std_object_handlers.get_property_ptr_ptr(object, member, key TSRMLS_CC);
 	}
 	return retval;
 }
 
-void winsystem_object_write_property(zval *object, zval *member, zval *value TSRMLS_DC)
+void winsystem_object_write_property(zval *object, zval *member, zval *value, const zend_literal *key TSRMLS_DC)
 {
 	winsystem_prop_handler *hnd = NULL;
 	int worked = FAILURE;
@@ -168,11 +168,11 @@ void winsystem_object_write_property(zval *object, zval *member, zval *value TSR
 			hnd->write_func(generic_object, member, value TSRMLS_CC);
 		}
 	} else {
-		std_object_handlers.write_property(object, member, value TSRMLS_CC);
+		std_object_handlers.write_property(object, member, value, key TSRMLS_CC);
 	}
 }
 
-void winsystem_object_delete_property(zval *object, zval *member TSRMLS_DC)
+void winsystem_object_delete_property(zval *object, zval *member, const zend_literal *key TSRMLS_DC)
 {
 	winsystem_prop_handler *hnd;
 	int worked = FAILURE;
@@ -189,11 +189,11 @@ void winsystem_object_delete_property(zval *object, zval *member TSRMLS_DC)
 	if (worked == SUCCESS) {
 		zend_throw_exception(ce_winsystem_exception, "Internal properties cannot be unset", 0 TSRMLS_CC);
 	} else {
-		std_object_handlers.unset_property(object, member TSRMLS_CC);
+		std_object_handlers.unset_property(object, member, key TSRMLS_CC);
 	}
 }
 
-int winsystem_object_property_exists(zval *object, zval *member, int check_empty TSRMLS_DC)
+int winsystem_object_property_exists(zval *object, zval *member, int check_empty, const zend_literal *key TSRMLS_DC)
 {
 	winsystem_prop_handler *hnd = NULL;
 	int worked = FAILURE, retval = 0;
@@ -222,7 +222,7 @@ int winsystem_object_property_exists(zval *object, zval *member, int check_empty
 		}
 		zval_ptr_dtor(&temp);
 	} else {
-		retval = std_object_handlers.has_property(object, member, check_empty TSRMLS_CC);
+		retval = std_object_handlers.has_property(object, member, check_empty, key TSRMLS_CC);
 	}
 	return retval;
 }

@@ -25,7 +25,7 @@ ZEND_DECLARE_MODULE_GLOBALS(winsystem);
 #include "php_main.h"
 #include "ext/standard/php_smart_str.h"
 #include "ext/standard/php_var.h" 
-#include "implement_waitable.h"
+#include "waitable.h"
 
 /* All the classes in this file */
 zend_class_entry *ce_winsystem_thread;
@@ -160,9 +160,9 @@ PHP_METHOD(WinSystemThread, set)
 
 	/* stick the string into the hash */
 	if (SUCCESS == zend_ts_hash_update(&winsystem_threads_globals, var_name, var_name_length + 1, (void *) serialized_string, new_var.len + 1, NULL)) {
-		RETVAL_FALSE
+		RETVAL_FALSE;
 	} else {
-		RETVAL_FALSE
+		RETVAL_FALSE;
 	}
 	smart_str_free(&new_var); 
 }

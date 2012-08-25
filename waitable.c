@@ -18,7 +18,7 @@
 
 #include "php_winsystem.h"
 #include "zend_exceptions.h"
-#include "implement_waitable.h"
+#include "waitable.h"
 
 zend_class_entry *ce_winsystem_waitable;
 zend_class_entry *ce_winsystem_wait;

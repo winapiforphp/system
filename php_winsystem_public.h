@@ -109,6 +109,11 @@ typedef struct _winsystem_timer_object {
 	winsystem_timer_callback *store;
 } winsystem_timer_object;
 
+typedef struct _winsystem_service_controller_object {
+	zend_object    std;
+	zend_bool      is_constructed;
+} winsystem_service_controller_object;
+
 #ifdef ZTS
 
 /* timerqueue object */

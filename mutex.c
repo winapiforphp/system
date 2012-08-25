@@ -18,7 +18,7 @@
 
 #include "php_winsystem.h"
 #include "zend_exceptions.h"
-#include "implement_waitable.h"
+#include "waitable.h"
 
 ZEND_DECLARE_MODULE_GLOBALS(winsystem);
 
@@ -366,14 +366,13 @@ static zend_object_value winsystem_mutex_object_create(zend_class_entry *ce TSRM
 	winsystem_mutex_object     *mutex_object;
  
 	mutex_object = ecalloc(1, sizeof(winsystem_mutex_object));
-	zend_object_std_init((zend_object *) mutex_object, ce TSRMLS_CC);
+	zend_object_std_init(&mutex_object->std, ce TSRMLS_CC);
 	mutex_object->handle = NULL;
 	mutex_object->is_constructed = FALSE;
 	mutex_object->can_inherit = FALSE;
 	mutex_object->is_unicode = FALSE;
  
-	zend_hash_copy(mutex_object->std.properties, &(ce->default_properties),
-		(copy_ctor_func_t) zval_add_ref, NULL, sizeof(zval*));
+	object_properties_init(&mutex_object->std, ce);
  
 	retval.handle = zend_objects_store_put(mutex_object,
 		(zend_objects_store_dtor_t) zend_objects_destroy_object,
@@ -394,7 +393,7 @@ static zend_object_value winsystem_mutex_object_clone(zval *this_ptr TSRMLS_DC)
 	winsystem_mutex_object     *old_mutex_object = (winsystem_mutex_object *) zend_object_store_get_object(this_ptr TSRMLS_CC);
  
 	new_mutex_object = ecalloc(1, sizeof(winsystem_mutex_object));
-	zend_object_std_init((zend_object *) new_mutex_object, old_mutex_object->std.ce TSRMLS_CC);
+	zend_object_std_init(&new_mutex_object->std, old_mutex_object->std.ce TSRMLS_CC);
 	DuplicateHandle(GetCurrentProcess(), 
 					old_mutex_object->handle, 
 					GetCurrentProcess(),
@@ -414,8 +413,7 @@ static zend_object_value winsystem_mutex_object_clone(zval *this_ptr TSRMLS_DC)
 		new_mutex_object->name.string = estrdup(old_mutex_object->name.string);
 	}
  
-	zend_hash_copy(new_mutex_object->std.properties, &(old_mutex_object->std.ce->default_properties),
-		(copy_ctor_func_t) zval_add_ref, NULL, sizeof(zval*));
+	object_properties_init(&new_mutex_object->std, old_mutex_object->std.ce);
  
 	retval.handle = zend_objects_store_put(new_mutex_object,
 		(zend_objects_store_dtor_t) zend_objects_destroy_object,
@@ -434,14 +432,16 @@ static HashTable *winsystem_mutex_get_debug_info(zval *obj, int *is_temp TSRMLS_
 {
 	winsystem_mutex_object *mutex = (winsystem_mutex_object *) zend_object_store_get_object(obj TSRMLS_CC);
 
-	HashTable *retval;
+	HashTable *retval, *std_props;
 	zval *tmp;
 	char *can_inherit, *name;
 	int can_inherit_len, name_len;
 
 	ALLOC_HASHTABLE(retval);
-	zend_hash_init(retval, 1, NULL, ZVAL_PTR_DTOR, 0);
-	zend_hash_copy(retval, mutex->std.properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
+	zend_hash_init(retval, 2, NULL, ZVAL_PTR_DTOR, 0);
+
+	std_props = zend_std_get_properties(obj TSRMLS_CC);
+	zend_hash_copy(retval, std_props, (copy_ctor_func_t)zval_add_ref, NULL, sizeof(zval*));
 
 	zend_mangle_property_name(&can_inherit, &can_inherit_len, 
 	mutex->std.ce->name, mutex->std.ce->name_length, "canInherit", sizeof("canInherit") -1, 0);
@@ -495,8 +495,6 @@ PHP_MINIT_FUNCTION(winsystem_mutex)
 	winsystem_mutex_constructor_wrapper.common.prototype = NULL;
 	winsystem_mutex_constructor_wrapper.common.required_num_args = 0;
 	winsystem_mutex_constructor_wrapper.common.arg_info = NULL;
-	winsystem_mutex_constructor_wrapper.common.pass_rest_by_reference = 0;
-	winsystem_mutex_constructor_wrapper.common.return_reference = 0;
 	winsystem_mutex_constructor_wrapper.internal_function.handler = winsystem_mutex_construction_wrapper;
 	winsystem_mutex_constructor_wrapper.internal_function.module = EG(current_module);
 

@@ -18,7 +18,7 @@
 
 #include "php_winsystem.h"
 #include "zend_exceptions.h"
-#include "implement_waitable.h"
+#include "waitable.h"
 
 zend_class_entry *ce_winsystem_semaphore;
 static zend_object_handlers winsystem_semaphore_object_handlers;
@@ -402,14 +402,13 @@ static zend_object_value winsystem_semaphore_object_create(zend_class_entry *ce 
 	winsystem_semaphore_object *semaphore_object;
 
 	semaphore_object = ecalloc(1, sizeof(winsystem_semaphore_object));
-	zend_object_std_init((zend_object *) semaphore_object, ce TSRMLS_CC);
+	zend_object_std_init(&semaphore_object->std, ce TSRMLS_CC);
 	semaphore_object->handle = NULL;
 	semaphore_object->max_count = -1;
 	semaphore_object->can_inherit = FALSE;
 	semaphore_object->is_unicode = FALSE;
  
-	zend_hash_copy(semaphore_object->std.properties, &(ce->default_properties),
-		(copy_ctor_func_t) zval_add_ref, NULL, sizeof(zval*));
+	object_properties_init(&semaphore_object->std, ce);
  
 	retval.handle = zend_objects_store_put(semaphore_object,
 		(zend_objects_store_dtor_t) zend_objects_destroy_object,
@@ -430,7 +429,7 @@ static zend_object_value winsystem_semaphore_object_clone(zval *this_ptr TSRMLS_
 	winsystem_semaphore_object     *old_semaphore_object = (winsystem_semaphore_object *) zend_object_store_get_object(this_ptr TSRMLS_CC);
  
 	new_semaphore_object = ecalloc(1, sizeof(winsystem_semaphore_object));
-	zend_object_std_init((zend_object *) new_semaphore_object, old_semaphore_object->std.ce TSRMLS_CC);
+	zend_object_std_init(&new_semaphore_object->std, old_semaphore_object->std.ce TSRMLS_CC);
 	DuplicateHandle(GetCurrentProcess(), 
 					old_semaphore_object->handle, 
 					GetCurrentProcess(),
@@ -453,8 +452,7 @@ static zend_object_value winsystem_semaphore_object_clone(zval *this_ptr TSRMLS_
 		new_semaphore_object->name.string = estrdup(old_semaphore_object->name.string);
 	}
 
-	zend_hash_copy(new_semaphore_object->std.properties, &(old_semaphore_object->std.ce->default_properties),
-		(copy_ctor_func_t) zval_add_ref, NULL, sizeof(zval*));
+	object_properties_init(&new_semaphore_object->std, old_semaphore_object->std.ce);
 
 	retval.handle = zend_objects_store_put(new_semaphore_object,
 		(zend_objects_store_dtor_t) zend_objects_destroy_object,
@@ -473,14 +471,16 @@ static HashTable *winsystem_semaphore_get_debug_info(zval *obj, int *is_temp TSR
 {
 	winsystem_semaphore_object *object = (winsystem_semaphore_object *) zend_object_store_get_object(obj TSRMLS_CC);
 
-	HashTable *retval;
+	HashTable *retval, *std_props;
 	zval *tmp;
 	char *can_inherit, *name, *max_count;
 	int can_inherit_len, name_len, max_count_len;
 
 	ALLOC_HASHTABLE(retval);
-	zend_hash_init(retval, 1, NULL, ZVAL_PTR_DTOR, 0);
-	zend_hash_copy(retval, object->std.properties, (copy_ctor_func_t) zval_add_ref, (void *) &tmp, sizeof(zval *));
+	zend_hash_init(retval, 3, NULL, ZVAL_PTR_DTOR, 0);
+
+	std_props = zend_std_get_properties(obj TSRMLS_CC);
+	zend_hash_copy(retval, std_props, (copy_ctor_func_t)zval_add_ref, NULL, sizeof(zval*));
 
 	zend_mangle_property_name(&max_count, &max_count_len, 
 		object->std.ce->name, object->std.ce->name_length, "maxCount", sizeof("maxCount") -1, 0);
@@ -539,8 +539,6 @@ PHP_MINIT_FUNCTION(winsystem_semaphore)
 	winsystem_semaphore_constructor_wrapper.common.prototype = NULL;
 	winsystem_semaphore_constructor_wrapper.common.required_num_args = 0;
 	winsystem_semaphore_constructor_wrapper.common.arg_info = NULL;
-	winsystem_semaphore_constructor_wrapper.common.pass_rest_by_reference = 0;
-	winsystem_semaphore_constructor_wrapper.common.return_reference = 0;
 	winsystem_semaphore_constructor_wrapper.internal_function.handler = winsystem_semaphore_construction_wrapper;
 	winsystem_semaphore_constructor_wrapper.internal_function.module = EG(current_module);
 
