@@ -24,7 +24,6 @@
 #define _WIN32_WINNT 0x0600 /* Vista */
 #define NTDDI_VERSION  NTDDI_VISTA /* Vista */
 
-#define _USE_32BIT_TIME_T 1 /* keeps windows.h from spewing errors */
 #define _WINSOCKAPI_ /* keep windows.h from spewing errors */
 #include <Windows.h> /* Include this FIRST we want vista stuff! */
 

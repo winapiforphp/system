@@ -53,7 +53,7 @@ ZEND_END_ARG_INFO()
 
 /* {{{ proto object Win\System\Semphore->__construct([string|Unicode name[, start[, maxcount[, inherit]]]])
        creates a new semaphore, can be named, minimum max count is 1,
-	   count not not be greater then max count */
+       count not not be greater then max count */
 PHP_METHOD(WinSystemSemaphore, __construct)
 {
 	/* Used for regular string */
