@@ -23,6 +23,9 @@
 #define PHP_WINSYSTEM_API __declspec(dllimport)
 #endif
 
+#define PHP_WINSYSTEM_NS ZEND_NS_NAME("Win", "System")
+#define PHP_WINSYSTEM_SERVICE_NS ZEND_NS_NAME(PHP_WINSYSTEM_NS, "Service")
+
 /* ----------------------------------------------------------------
   Typedefs
 ------------------------------------------------------------------*/
@@ -39,14 +42,6 @@ typedef union _winsystem_name {
 	zval *      unicode_object;
 	char *      string;
 } winsystem_name;
-
-/* unicode object */
-typedef struct _winsystem_unicode_object {
-	zend_object  std;
-	zend_bool    is_constructed;
-	WCHAR *      unicode_string;
-	CHAR *       multibyte_string;
-} winsystem_unicode_object;
 
 /* waitable object */
 typedef struct _winsystem_waitable_object {
@@ -149,12 +144,17 @@ typedef struct _winsystem_thread_object {
 ------------------------------------------------------------------*/
 extern PHP_WINSYSTEM_API void winsystem_create_error(int error, zend_class_entry *ce TSRMLS_DC);
 extern PHP_WINSYSTEM_API int winsystem_juggle_type(zval *value, int type TSRMLS_DC);
-extern PHP_WINSYSTEM_API WCHAR * win_system_convert_to_wchar(const CHAR ** utf8_string, int type);
-extern PHP_WINSYSTEM_API CHAR * win_system_convert_to_char(const WCHAR ** utf16_string, int type);
+extern PHP_WINSYSTEM_API WCHAR * php_winsystem_convert_to_wchar(const CHAR ** utf8_string, int type);
+extern PHP_WINSYSTEM_API CHAR * php_winsystem_convert_to_char(const WCHAR ** utf16_string, int type);
+
+extern PHP_WINSYSTEM_API long php_winsystem_get_enum_value(zval** enumclass TSRMLS_DC);
+extern PHP_WINSYSTEM_API void php_winsystem_set_enum_value(zval** enumclass, long value TSRMLS_DC);
+extern PHP_WINSYSTEM_API WCHAR * php_winsystem_get_unicode_wchar(zval** unicodeclass TSRMLS_DC);
 
 /* ----------------------------------------------------------------
   Exported Class Entries
 ------------------------------------------------------------------*/
+extern PHP_WINSYSTEM_API zend_class_entry *ce_winsystem_enum;
 extern PHP_WINSYSTEM_API zend_class_entry *ce_winsystem_unicode;
 
 #endif

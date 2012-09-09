@@ -65,7 +65,6 @@ PHP_METHOD(WinSystemEvent, __construct)
 
 	/* Used for wchar string */
 	zval *unicode = NULL;
-	winsystem_unicode_object *unicode_object = NULL;
 	int use_unicode = 0;
 
 	SECURITY_ATTRIBUTES event_attributes;
@@ -80,7 +79,6 @@ PHP_METHOD(WinSystemEvent, __construct)
 	/* version one, use unicode */
 	if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "O|bbb", &unicode, ce_winsystem_unicode, &state, &autoreset, &inherit) != FAILURE) {
 		use_unicode = 1;
-		unicode_object = (winsystem_unicode_object *)zend_object_store_get_object(unicode TSRMLS_CC);
 	} else if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s!bbb", &name, &name_length, &state, &autoreset, &inherit) == FAILURE) {
 		zend_restore_error_handling(&error_handling TSRMLS_CC);
 		return;
@@ -92,7 +90,7 @@ PHP_METHOD(WinSystemEvent, __construct)
 	event_attributes.bInheritHandle = inherit;
 
 	if (use_unicode) {
-		event_handle = CreateEventW(&event_attributes, state, autoreset, unicode_object->unicode_string);
+		event_handle = CreateEventW(&event_attributes, state, autoreset, php_winsystem_get_unicode_wchar(&unicode TSRMLS_CC));
 	} else {
 		event_handle = CreateEventA(&event_attributes, state, autoreset, name);
 	}
@@ -133,7 +131,6 @@ PHP_METHOD(WinSystemEvent, open)
 
 	/* Used for wchar string */
 	zval *unicode = NULL;
-	winsystem_unicode_object *unicode_object = NULL;
 	int use_unicode = 0;
 
 	/* Variables for a and w versions */
@@ -147,7 +144,6 @@ PHP_METHOD(WinSystemEvent, open)
 	/* version one, use unicode */
 	if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "O|b", &unicode, ce_winsystem_unicode, &inherit) != FAILURE) {
 		use_unicode = 1;
-		unicode_object = (winsystem_unicode_object *)zend_object_store_get_object(unicode TSRMLS_CC);
 	} else if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &name, &name_length, &inherit) == FAILURE) {
 		zend_restore_error_handling(&error_handling TSRMLS_CC);
 		return;
@@ -158,7 +154,7 @@ PHP_METHOD(WinSystemEvent, open)
 	event = (winsystem_event_object *)zend_object_store_get_object(return_value TSRMLS_CC);
 
 	if (use_unicode) {
-		event_handle = OpenEventW(SYNCHRONIZE, inherit, unicode_object->unicode_string);
+		event_handle = OpenEventW(SYNCHRONIZE, inherit, php_winsystem_get_unicode_wchar(&unicode TSRMLS_CC));
 	} else {
 		event_handle = OpenEventA(SYNCHRONIZE, inherit, name);
 	}

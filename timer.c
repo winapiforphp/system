@@ -67,7 +67,6 @@ PHP_METHOD(WinSystemTimer, __construct)
 
 	/* Used for wchar string */
 	zval *unicode = NULL;
-	winsystem_unicode_object *unicode_object = NULL;
 	int use_unicode = 0;
 
 	SECURITY_ATTRIBUTES timer_attributes;
@@ -81,7 +80,6 @@ PHP_METHOD(WinSystemTimer, __construct)
 	/* version one, use unicode */
 	if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "O|bb", &unicode, ce_winsystem_unicode, &autoreset, &inherit) != FAILURE) {
 		use_unicode = 1;
-		unicode_object = (winsystem_unicode_object *)zend_object_store_get_object(unicode TSRMLS_CC);
 	} else if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s!bb", &name, &name_length, &autoreset, &inherit) == FAILURE) {
 		zend_restore_error_handling(&error_handling TSRMLS_CC);
 		return;
@@ -93,7 +91,7 @@ PHP_METHOD(WinSystemTimer, __construct)
 	timer_attributes.bInheritHandle = inherit;
 
 	if (use_unicode) {
-		timer_handle = CreateWaitableTimerW(&timer_attributes, autoreset, unicode_object->unicode_string);
+		timer_handle = CreateWaitableTimerW(&timer_attributes, autoreset, php_winsystem_get_unicode_wchar(&unicode TSRMLS_CC));
 	} else {
 		timer_handle = CreateWaitableTimerA(&timer_attributes, autoreset, name);
 	}
@@ -128,7 +126,6 @@ PHP_METHOD(WinSystemTimer, open)
 
 	/* Used for wchar string */
 	zval *unicode = NULL;
-	winsystem_unicode_object *unicode_object = NULL;
 	int use_unicode = 0;
 
 	/* Variables for a and w versions */
@@ -142,7 +139,6 @@ PHP_METHOD(WinSystemTimer, open)
 	/* version one, use unicode */
 	if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "O|b", &unicode, ce_winsystem_unicode, &inherit) != FAILURE) {
 		use_unicode = 1;
-		unicode_object = (winsystem_unicode_object *)zend_object_store_get_object(unicode TSRMLS_CC);
 	} else if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &name, &name_length, &inherit) == FAILURE) {
 		zend_restore_error_handling(&error_handling TSRMLS_CC);
 		return;
@@ -153,7 +149,7 @@ PHP_METHOD(WinSystemTimer, open)
 	timer = (winsystem_timer_object *)zend_object_store_get_object(return_value TSRMLS_CC);
 
 	if (use_unicode) {
-		timer_handle = OpenWaitableTimerW(SYNCHRONIZE, inherit, unicode_object->unicode_string);
+		timer_handle = OpenWaitableTimerW(SYNCHRONIZE, inherit, php_winsystem_get_unicode_wchar(&unicode TSRMLS_CC));
 	} else {
 		timer_handle = OpenWaitableTimerA(SYNCHRONIZE, inherit, name);
 	}

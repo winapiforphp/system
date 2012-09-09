@@ -62,7 +62,6 @@ PHP_METHOD(WinSystemSemaphore, __construct)
 
 	/* Used for wchar string */
 	zval *unicode = NULL;
-	winsystem_unicode_object *unicode_object = NULL;
 	int use_unicode = 0;
 
 	SECURITY_ATTRIBUTES semaphore_attributes;
@@ -77,7 +76,6 @@ PHP_METHOD(WinSystemSemaphore, __construct)
 	/* version one, use unicode */
 	if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "O|llb", &unicode, ce_winsystem_unicode, &count, &max_count, &inherit) != FAILURE) {
 		use_unicode = 1;
-		unicode_object = (winsystem_unicode_object *)zend_object_store_get_object(unicode TSRMLS_CC);
 	} else if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s!llb", &name, &name_length, &count, &max_count, &inherit) == FAILURE) {
 		zend_restore_error_handling(&error_handling TSRMLS_CC);
 		return;
@@ -99,7 +97,7 @@ PHP_METHOD(WinSystemSemaphore, __construct)
 	semaphore_attributes.bInheritHandle = inherit;
 
 	if (use_unicode) {
-		semaphore_handle = CreateSemaphoreW(&semaphore_attributes, count, max_count, unicode_object->unicode_string);
+		semaphore_handle = CreateSemaphoreW(&semaphore_attributes, count, max_count, php_winsystem_get_unicode_wchar(&unicode TSRMLS_CC));
 	} else {
 		semaphore_handle = CreateSemaphoreA(&semaphore_attributes, count, max_count, name);
 	}
@@ -141,7 +139,6 @@ PHP_METHOD(WinSystemSemaphore, open)
 
 	/* Used for wchar string */
 	zval *unicode = NULL;
-	winsystem_unicode_object *unicode_object = NULL;
 	int use_unicode = 0;
 
 	/* Variables for a and w versions */
@@ -155,7 +152,6 @@ PHP_METHOD(WinSystemSemaphore, open)
 	/* version one, use unicode */
 	if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "O|b", &unicode, ce_winsystem_unicode, &inherit) != FAILURE) {
 		use_unicode = 1;
-		unicode_object = (winsystem_unicode_object *)zend_object_store_get_object(unicode TSRMLS_CC);
 	} else if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &name, &name_length, &inherit) == FAILURE) {
 		zend_restore_error_handling(&error_handling TSRMLS_CC);
 		return;
@@ -166,7 +162,7 @@ PHP_METHOD(WinSystemSemaphore, open)
 	semaphore = (winsystem_semaphore_object *)zend_object_store_get_object(return_value TSRMLS_CC);
 
 	if (use_unicode) {
-		semaphore_handle = OpenSemaphoreW(SYNCHRONIZE, inherit, unicode_object->unicode_string);
+		semaphore_handle = OpenSemaphoreW(SYNCHRONIZE, inherit, php_winsystem_get_unicode_wchar(&unicode TSRMLS_CC));
 	} else {
 		semaphore_handle = OpenSemaphoreA(SYNCHRONIZE, inherit, name);
 	}

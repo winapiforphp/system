@@ -1,11 +1,46 @@
-Process control support
-Threading (FOR TS PHP versions ONLY) - locking fixes and additional methods
-Basic Windows System Information (OS and other info)
-Registry Access
-Syncronization (semaphores, locks, etc - SOME ITEMS ONLY AVAILABLE IN TS PHP)
-Some Device Services (IO for serial, usb, etc)
+The point of the system extensions is to provide
 
-Registry:
-    * Needs tests
-RegistryKey:
-    * Needs writing
+1. A set of basic classes (enum, struct, unicode string) for other items to use
+2. Processes (creation, enumeration, control)
+3. Threading (FOR TS PHP versions ONLY)
+4. Sychronization (Mutex, Event, Timer, Semaphore, Wait) - possibly more features
+5. Registry
+6. Basic Windows information
+
+Additional features such as
+1. Windows services
+2. pipes, mailslots and other ipc
+3. device services, etc
+
+Will end up in other extensions
+
+Synchronization Functions - http://msdn.microsoft.com/en-us/library/windows/desktop/ms686360%28v=vs.85%29.aspx
+Processes and Threads - http://msdn.microsoft.com/en-us/library/windows/desktop/ms684847%28v=vs.85%29.aspx
+
+Complete:
+Waitable Interface (Partial) 
+Mutex
+Semaphore
+Timer (waitable)
+Events
+
+TODO:
+Singly linked list (like spl container)
+One-time initialization functions
+rest of thread support
+processes and enumeration
+
+To wrap later?
+Object Namespaces
+Timer Queue
+Interlocked
+Critical Sections
+job objects
+fibers
+thread pool
+
+Windows 7 only?
+Slim read/write locks
+
+Windows 8 only?
+Synchronization Barriers 

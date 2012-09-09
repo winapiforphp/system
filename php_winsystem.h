@@ -31,7 +31,9 @@
 #include "version.h"
 
 /* Needed PHP includes */
-#include "php.h"
+#include <php.h>
+#include <zend_exceptions.h>
+#include <ext/spl/spl_exceptions.h>
 
 #ifdef PHP_WIN32
 #define PHP_WINSYSTEM_API __declspec(dllexport)
@@ -49,8 +51,20 @@
 /* ----------------------------------------------------------------
   Typedefs
 ------------------------------------------------------------------*/
-#define PHP_WINSYSTEM_NS ZEND_NS_NAME("Win", "System")
-#define PHP_WINSYSTEM_SERVICE_NS ZEND_NS_NAME(PHP_WINSYSTEM_NS, "Service")
+
+#define PHP_WINSYSTEM_EXCEPTIONS \
+zend_error_handling error_handling; \
+zend_replace_error_handling(EH_THROW, spl_ce_InvalidArgumentException, &error_handling TSRMLS_CC);
+
+#define PHP_WINSYSTEM_RESTORE_ERRORS \
+zend_restore_error_handling(&error_handling TSRMLS_CC);
+
+#define REGISTER_ENUM_CONST(const_name, value, ce) \
+zend_declare_class_constant_long(ce, const_name, sizeof(const_name)-1, (long)value TSRMLS_CC);
+
+/* struct typedefs */
+typedef struct _winsystem_enum_object winsystem_enum_object;
+typedef struct _winsystem_unicode_object winsystem_unicode_object;
 
 /* ----------------------------------------------------------------
   Property Magic
@@ -82,6 +96,8 @@ static inline void winsystem_register_prop_handler(HashTable *prop_handlers, zen
 /* ----------------------------------------------------------------
   Class Entries
 ------------------------------------------------------------------*/
+extern zend_class_entry *ce_winsystem_codepage;
+
 extern zend_class_entry *ce_winsystem_event;
 extern zend_class_entry *ce_winsystem_waitable;
 extern zend_class_entry *ce_winsystem_exception;
@@ -107,6 +123,10 @@ ZEND_END_MODULE_GLOBALS(winsystem)
 # define WINSYSTEM_G(v)   (winsystem_globals.v)
 #endif
 
+PHP_MINIT_FUNCTION(winsystem_enum);
+PHP_MINIT_FUNCTION(winsystem_codepage);
+PHP_MINIT_FUNCTION(winsystem_unicode);
+
 PHP_MINIT_FUNCTION(winsystem_util);
 PHP_MINIT_FUNCTION(winsystem_waitable);
 PHP_MINIT_FUNCTION(winsystem_mutex);
@@ -115,7 +135,6 @@ PHP_MINIT_FUNCTION(winsystem_event);
 PHP_MINIT_FUNCTION(winsystem_timer);
 PHP_MINIT_FUNCTION(winsystem_timerqueue);
 PHP_MINIT_FUNCTION(winsystem_thread);
-PHP_MINIT_FUNCTION(winsystem_unicode);
 PHP_MINIT_FUNCTION(winsystem_registry);
 PHP_MINIT_FUNCTION(winsystem_service_controller);
 
