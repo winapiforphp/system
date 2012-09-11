@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2011 The PHP Group                                |
+  | Copyright (c) 1997-2012 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -13,20 +13,16 @@
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
   | Author: Mark Skilbeck <markskilbeck@php.net>                         |
+  | Author: Elizabeth Smith <auroraeosrose@gmail.com>                    |
   +----------------------------------------------------------------------+
 */
 
 #include "php_winsystem.h"
-#include "zend_exceptions.h"
 
 zend_class_entry *ce_winsystem_registry;
 
 /* ----------------------------------------------------------------
   Win\System\Registry Userland API
-
-  The static Registry class provides convenience methods. A more
-  comprehensive implementation is available via the RegistryKey
-  class.
 ------------------------------------------------------------------*/
 
 ZEND_BEGIN_ARG_INFO_EX(WinSystemRegistry_getValue_args, ZEND_SEND_BY_VAL, ZEND_RETURN_VAL, 2)
@@ -94,13 +90,13 @@ PHP_METHOD(WinSystemRegistry, getValue)
 	} else if (strcmp(key_root, "HKEY_USERS") == 0) {
 		key = HKEY_USERS;
 	} else {
-		zend_throw_exception_ex(ce_winsystem_exception, 0 TSRMLS_CC, "%s is not a valid root key", key_root);
+		zend_throw_exception_ex(ce_winsystem_runtimeexception, 0 TSRMLS_CC, "%s is not a valid root key", key_root);
 		return;
 	}
 
 	if (RegGetValue(key, key_subkey, value,
 		RRF_RT_ANY | RRF_NOEXPAND, &type, NULL, &size) != ERROR_SUCCESS) {
-		winsystem_create_error(GetLastError(), ce_winsystem_exception TSRMLS_CC);
+		winsystem_create_error(GetLastError(), ce_winsystem_runtimeexception TSRMLS_CC);
 		return;
 	}
 
@@ -108,7 +104,7 @@ PHP_METHOD(WinSystemRegistry, getValue)
 
 	if (RegGetValue(key, key_subkey, value, RRF_RT_ANY | RRF_NOEXPAND, &type, (PVOID) data, &size) != ERROR_SUCCESS)
 	{
-		winsystem_create_error(GetLastError(), ce_winsystem_exception TSRMLS_CC);
+		winsystem_create_error(GetLastError(), ce_winsystem_runtimeexception TSRMLS_CC);
 		return;
 	}
 
@@ -187,7 +183,7 @@ PHP_METHOD(WinSystemRegistry, setValue)
 
 	// Using a zval for last param so we can check for a NULL value later on
 	if (value_type_zval && Z_TYPE_P(value_type_zval) != IS_LONG) {
-		zend_throw_exception_ex(ce_winsystem_exception, 0 TSRMLS_CC, "expected long for parameter 4, got %s", 
+		zend_throw_exception_ex(ce_winsystem_runtimeexception, 0 TSRMLS_CC, "expected long for parameter 4, got %s", 
 			zend_zval_type_name(value_type_zval));
 		return;
 	}
@@ -220,12 +216,12 @@ PHP_METHOD(WinSystemRegistry, setValue)
 		key = HKEY_USERS;
 	}
 	else {
-		zend_throw_exception_ex(ce_winsystem_exception, 0 TSRMLS_CC, "%s is not a valid root key", key_root);
+		zend_throw_exception_ex(ce_winsystem_outofboundsexception, 0 TSRMLS_CC, "%s is not a valid root key", key_root);
 		return;
 	}
 
 	if (RegCreateKeyEx(key, key_subkey, 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &key_opened, NULL) != ERROR_SUCCESS) {
-		winsystem_create_error(GetLastError(), ce_winsystem_exception TSRMLS_CC);
+		winsystem_create_error(GetLastError(), ce_winsystem_runtimeexception TSRMLS_CC);
 		return;
 	}
 
@@ -248,37 +244,37 @@ PHP_METHOD(WinSystemRegistry, setValue)
 
 	if (value_type == REG_BINARY) {
 		if (Z_TYPE_P(data_zval) != IS_STRING) {
-			zend_throw_exception_ex(ce_winsystem_exception, 0 TSRMLS_CC, "expected string for binary type, got %s",
+			zend_throw_exception_ex(ce_winsystem_runtimeexception, 0 TSRMLS_CC, "expected string for binary type, got %s",
 				zend_zval_type_name(data_zval));
 			return;
 		}
 
 		if (RegSetKeyValue(key_opened, NULL, value, value_type, 
 						   (LPCVOID) Z_STRVAL_P(data_zval), Z_STRLEN_P(data_zval)) != ERROR_SUCCESS) {
-			winsystem_create_error(GetLastError(), ce_winsystem_exception TSRMLS_CC);
+			winsystem_create_error(GetLastError(), ce_winsystem_runtimeexception TSRMLS_CC);
 			return;
 		}
 	} else if (value_type == REG_DWORD || value_type == REG_DWORD_BIG_ENDIAN || value_type == REG_DWORD_LITTLE_ENDIAN) {
 		if (Z_TYPE_P(data_zval) != IS_LONG) {
-			zend_throw_exception_ex(ce_winsystem_exception, 0 TSRMLS_CC, "expected long for dword type, got %s",
+			zend_throw_exception_ex(ce_winsystem_runtimeexception, 0 TSRMLS_CC, "expected long for dword type, got %s",
 				zend_zval_type_name(data_zval));
 			return;
 		}
 
 		if (RegSetKeyValue(key_opened, NULL, value, value_type, &(Z_LVAL_P(data_zval)), sizeof(DWORD)) != ERROR_SUCCESS) {
-			winsystem_create_error(GetLastError(), ce_winsystem_exception TSRMLS_CC);
+			winsystem_create_error(GetLastError(), ce_winsystem_runtimeexception TSRMLS_CC);
 			return;
 		}
 	} else if (value_type == REG_SZ || value_type == REG_EXPAND_SZ || value_type == REG_LINK) {
 		if (Z_TYPE_P(data_zval) != IS_STRING) {
-			zend_throw_exception_ex(ce_winsystem_exception, 0 TSRMLS_CC, "expected string for string type, got %s",
+			zend_throw_exception_ex(ce_winsystem_runtimeexception, 0 TSRMLS_CC, "expected string for string type, got %s",
 				zend_zval_type_name(data_zval));
 			return;
 		}
 
 		if (RegSetKeyValue(key_opened, NULL, value, value_type, (LPCVOID) Z_STRVAL_P(data_zval), 
 				Z_STRLEN_P(data_zval)) != ERROR_SUCCESS) {
-			winsystem_create_error(GetLastError(), ce_winsystem_exception TSRMLS_CC);
+			winsystem_create_error(GetLastError(), ce_winsystem_runtimeexception TSRMLS_CC);
 			return;
 		}
 	} else if (value_type == REG_MULTI_SZ) {
@@ -288,14 +284,14 @@ PHP_METHOD(WinSystemRegistry, setValue)
 		int  offset = 0;
 
 		if (Z_TYPE_P(data_zval) != IS_ARRAY) {
-			zend_throw_exception_ex(ce_winsystem_exception, 0 TSRMLS_CC, "expected array for multi-string type, got %s",
+			zend_throw_exception_ex(ce_winsystem_runtimeexception, 0 TSRMLS_CC, "expected array for multi-string type, got %s",
 				zend_zval_type_name(data_zval));
 			return;
 		}
 
 		hash = Z_ARRVAL_P(data_zval);
 		if (zend_hash_num_elements(hash) == 0) {
-			zend_throw_exception(ce_winsystem_exception, "got an empty array", 0 TSRMLS_CC);
+			zend_throw_exception(ce_winsystem_runtimeexception, "got an empty array", 0 TSRMLS_CC);
 			return;
 		}
 
@@ -312,7 +308,7 @@ PHP_METHOD(WinSystemRegistry, setValue)
 
 			/* We want a string */
 			if (Z_TYPE_PP(current_string) != IS_STRING) {
-				zend_throw_exception_ex(ce_winsystem_exception, 0 TSRMLS_CC, "expected array of strings, got %d in array",
+				zend_throw_exception_ex(ce_winsystem_runtimeexception, 0 TSRMLS_CC, "expected array of strings, got %d in array",
 					zend_zval_type_name(*current_string));
 				free(current_string);
 				return;
@@ -332,7 +328,7 @@ PHP_METHOD(WinSystemRegistry, setValue)
 		multi_string[offset] = '\0';
 
 		if (RegSetKeyValue(key_opened, NULL, value, value_type, (LPCVOID) multi_string, offset) != ERROR_SUCCESS) {
-			winsystem_create_error(GetLastError(), ce_winsystem_exception TSRMLS_CC);
+			winsystem_create_error(GetLastError(), ce_winsystem_runtimeexception TSRMLS_CC);
 			efree(multi_string);
 			return;
 		}
@@ -341,14 +337,14 @@ PHP_METHOD(WinSystemRegistry, setValue)
 	} else if (value_type == REG_QWORD || value_type == REG_QWORD_LITTLE_ENDIAN) {
 		/* TODO: Should we allow longs to be passed in? */
 		if (Z_TYPE_P(data_zval) != IS_STRING) {
-			zend_throw_exception_ex(ce_winsystem_exception, 0 TSRMLS_CC,
+			zend_throw_exception_ex(ce_winsystem_runtimeexception, 0 TSRMLS_CC,
 				"expected string for qword type, got %s", zend_zval_type_name(data_zval));
 			return;
 		}
 
 		if (RegSetKeyValue(key_opened, NULL, value, value_type, (LPCVOID) Z_STRVAL_P(data_zval), 
 			Z_STRLEN_P(data_zval)) != ERROR_SUCCESS) {
-			winsystem_create_error(GetLastError(), ce_winsystem_exception TSRMLS_CC);
+			winsystem_create_error(GetLastError(), ce_winsystem_runtimeexception TSRMLS_CC);
 			return;
 		}
 	}
@@ -368,7 +364,7 @@ PHP_METHOD(WinSystemRegistry, getSystemRegistryQuota)
 	}
 
 	if ( ! GetSystemRegistryQuota(&allowed, &used)) {
-		winsystem_create_error(GetLastError(), ce_winsystem_exception TSRMLS_CC);
+		winsystem_create_error(GetLastError(), ce_winsystem_runtimeexception TSRMLS_CC);
 		return;
 	}
 
@@ -392,12 +388,12 @@ PHP_METHOD(WinSystemRegistry, disablePredefinedCache)
 
 	if (all) {
 		if (RegDisablePredefinedCacheEx() != ERROR_SUCCESS) {
-			winsystem_create_error(GetLastError(), ce_winsystem_exception TSRMLS_CC);
+			winsystem_create_error(GetLastError(), ce_winsystem_runtimeexception TSRMLS_CC);
 			return;
 		}
 	} else {
 		if (RegDisablePredefinedCache() != ERROR_SUCCESS) {
-			winsystem_create_error(GetLastError(), ce_winsystem_exception TSRMLS_CC);
+			winsystem_create_error(GetLastError(), ce_winsystem_runtimeexception TSRMLS_CC);
 			return;
 		}
 	}

@@ -24,6 +24,16 @@ zend_class_entry *ce_winsystem_semaphore;
 static zend_object_handlers winsystem_semaphore_object_handlers;
 static zend_function winsystem_semaphore_constructor_wrapper;
 
+struct _winsystem_semaphore_object {
+	zend_object    std;
+	zend_bool      is_constructed;
+	HANDLE         handle;
+	long           max_count;
+	BOOL           can_inherit;
+	zend_bool      is_unicode;
+	winsystem_name name;
+};
+
 /* ----------------------------------------------------------------
   Win\System\Semaphore Userland API
 ------------------------------------------------------------------*/
@@ -39,7 +49,8 @@ ZEND_BEGIN_ARG_INFO_EX(WinSystemSemaphore_open_args, ZEND_SEND_BY_VAL, ZEND_RETU
 	ZEND_ARG_INFO(0, process_inherit)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO(WinSystemSemaphore_release_args, ZEND_SEND_BY_VAL)
+ZEND_BEGIN_ARG_INFO_EX(WinSystemSemaphore_release_args, ZEND_SEND_BY_VAL, ZEND_RETURN_VALUE, 0)
+	ZEND_ARG_INFO(0, count)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO(WinSystemSemaphore_getMaxCount_args, ZEND_SEND_BY_VAL)
@@ -50,6 +61,7 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO(WinSystemSemaphore_canInherit_args, ZEND_SEND_BY_VAL)
 ZEND_END_ARG_INFO()
+
 
 /* {{{ proto object Win\System\Semphore->__construct([string|Unicode name[, start[, maxcount[, inherit]]]])
        creates a new semaphore, can be named, minimum max count is 1,
@@ -68,27 +80,25 @@ PHP_METHOD(WinSystemSemaphore, __construct)
 	zend_bool inherit = TRUE;
 	long count = 0, max_count = 1;
 	HANDLE semaphore_handle;
-	zend_error_handling error_handling;
 	winsystem_semaphore_object *semaphore = (winsystem_semaphore_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
 
-	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
-
+	PHP_WINSYSTEM_EXCEPTIONS
 	/* version one, use unicode */
-	if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "O|llb", &unicode, ce_winsystem_unicode, &count, &max_count, &inherit) != FAILURE) {
+	if (FAILURE != zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "O|llb", &unicode, ce_winsystem_unicode, &count, &max_count, &inherit)) {
 		use_unicode = 1;
-	} else if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s!llb", &name, &name_length, &count, &max_count, &inherit) == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+	} else if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s!llb", &name, &name_length, &count, &max_count, &inherit)) {
+		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	if (count < 0 || count > max_count) {
-		zend_throw_exception(ce_winsystem_argexception, "Count must be less than the max_count and 0 or greater", 0 TSRMLS_CC);
+		zend_throw_exception(ce_winsystem_outofboundsexception, "Count must be less than the max_count and 0 or greater", 0 TSRMLS_CC);
 		return;
 	}
 
 	if (max_count < 1) {
-		zend_throw_exception(ce_winsystem_argexception, "Max count must be at least 1", 0 TSRMLS_CC);
+		zend_throw_exception(ce_winsystem_outofboundsexception, "Max count must be at least 1", 0 TSRMLS_CC);
 		return;
 	}
 
@@ -97,7 +107,7 @@ PHP_METHOD(WinSystemSemaphore, __construct)
 	semaphore_attributes.bInheritHandle = inherit;
 
 	if (use_unicode) {
-		semaphore_handle = CreateSemaphoreW(&semaphore_attributes, count, max_count, php_winsystem_get_unicode_wchar(&unicode TSRMLS_CC));
+		semaphore_handle = CreateSemaphoreW(&semaphore_attributes, count, max_count, php_winsystem_unicode_get_wchar(&unicode TSRMLS_CC));
 	} else {
 		semaphore_handle = CreateSemaphoreA(&semaphore_attributes, count, max_count, name);
 	}
@@ -107,9 +117,9 @@ PHP_METHOD(WinSystemSemaphore, __construct)
 		DWORD error_num = GetLastError();
 
 		if (error_num == ERROR_INVALID_HANDLE) {
-			zend_throw_exception(ce_winsystem_exception, "Name is already in use for waitable object", error_num TSRMLS_CC);
+			zend_throw_exception(ce_winsystem_runtimeexception, "Name is already in use for waitable object", error_num TSRMLS_CC);
 		} else {
-			winsystem_create_error(error_num, ce_winsystem_exception TSRMLS_CC);
+			winsystem_create_error(error_num, ce_winsystem_runtimeexception TSRMLS_CC);
 		}
 		return;
 	}
@@ -145,24 +155,22 @@ PHP_METHOD(WinSystemSemaphore, open)
 	zend_bool inherit = TRUE;
 	HANDLE semaphore_handle;
 	winsystem_semaphore_object *semaphore;
-	zend_error_handling error_handling;
 
-	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
-
+	PHP_WINSYSTEM_EXCEPTIONS
 	/* version one, use unicode */
-	if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "O|b", &unicode, ce_winsystem_unicode, &inherit) != FAILURE) {
+	if (FAILURE != zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "O|b", &unicode, ce_winsystem_unicode, &inherit)) {
 		use_unicode = 1;
-	} else if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &name, &name_length, &inherit) == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+	} else if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &name, &name_length, &inherit)) {
+		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	object_init_ex(return_value, ce_winsystem_semaphore);
 	semaphore = (winsystem_semaphore_object *)zend_object_store_get_object(return_value TSRMLS_CC);
 
 	if (use_unicode) {
-		semaphore_handle = OpenSemaphoreW(SYNCHRONIZE, inherit, php_winsystem_get_unicode_wchar(&unicode TSRMLS_CC));
+		semaphore_handle = OpenSemaphoreW(SYNCHRONIZE, inherit, php_winsystem_unicode_get_wchar(&unicode TSRMLS_CC));
 	} else {
 		semaphore_handle = OpenSemaphoreA(SYNCHRONIZE, inherit, name);
 	}
@@ -171,9 +179,9 @@ PHP_METHOD(WinSystemSemaphore, open)
 		DWORD error_num = GetLastError();
 
 		if (error_num == ERROR_FILE_NOT_FOUND) {
-			zend_throw_exception(ce_winsystem_exception, "Semaphore was not found and could not be opened", error_num TSRMLS_CC);
+			zend_throw_exception(ce_winsystem_runtimeexception, "Semaphore was not found and could not be opened", error_num TSRMLS_CC);
 		} else {
-			winsystem_create_error(error_num, ce_winsystem_exception TSRMLS_CC);
+			winsystem_create_error(error_num, ce_winsystem_runtimeexception TSRMLS_CC);
 		}
 		return;
 	}
@@ -197,15 +205,14 @@ PHP_METHOD(WinSystemSemaphore, open)
        returns the current name of the semaphore or null if it's unnamed */
 PHP_METHOD(WinSystemSemaphore, getName)
 {
-	zend_error_handling error_handling;
 	winsystem_semaphore_object *semaphore = (winsystem_semaphore_object*)zend_object_store_get_object(getThis() TSRMLS_CC);
 	
-	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters_none() == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_EXCEPTIONS
+	if (FAILURE == zend_parse_parameters_none()) {
+		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	if (semaphore->is_unicode) {
 		RETURN_ZVAL(semaphore->name.unicode_object, 1, 0);
@@ -224,21 +231,20 @@ PHP_METHOD(WinSystemSemaphore, release)
 	BOOL worked;
 	int error;
 	long count = 1, prev_count;
-	zend_error_handling error_handling;
 	winsystem_semaphore_object *semaphore = (winsystem_semaphore_object*)zend_object_store_get_object(getThis() TSRMLS_CC);
 
-	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &count) == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_EXCEPTIONS
+	if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|l", &count)) {
+		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	worked = ReleaseSemaphore(semaphore->handle, count, &prev_count);
 	if (worked == 0) {
 		error = GetLastError();
 		if (error) {
-			winsystem_create_error(error, ce_winsystem_exception TSRMLS_CC);
+			winsystem_create_error(error, ce_winsystem_runtimeexception TSRMLS_CC);
 		}
 		RETURN_FALSE
 	}
@@ -251,18 +257,17 @@ PHP_METHOD(WinSystemSemaphore, release)
       get the maximum allowed semaphore count */
 PHP_METHOD(WinSystemSemaphore, getMaxCount)
 {
-	zend_error_handling error_handling;
 	winsystem_semaphore_object *semaphore = (winsystem_semaphore_object*)zend_object_store_get_object(getThis() TSRMLS_CC);
 	
-	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters_none() == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_EXCEPTIONS
+	if (FAILURE == zend_parse_parameters_none()) {
+		PHP_WINSYSTEM_EXCEPTIONS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	if (semaphore->max_count < 0) {
-		zend_throw_exception(ce_winsystem_exception, "Max semaphore count unknown", 0 TSRMLS_CC);
+		zend_throw_exception(ce_winsystem_runtimeexception, "Max semaphore count unknown", 0 TSRMLS_CC);
 	}
 
 	RETURN_LONG(semaphore->max_count)
@@ -273,15 +278,14 @@ PHP_METHOD(WinSystemSemaphore, getMaxCount)
       if a semaphore was created with a "can inherit" flag, meaning child processes can grab it */
 PHP_METHOD(WinSystemSemaphore, canInherit)
 {
-	zend_error_handling error_handling;
 	winsystem_semaphore_object *semaphore = (winsystem_semaphore_object*)zend_object_store_get_object(getThis() TSRMLS_CC);
 	
-	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters_none() == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_EXCEPTIONS
+	if (FAILURE == zend_parse_parameters_none()) {
+		PHP_WINSYSTEM_EXCEPTIONS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	RETURN_BOOL(semaphore->can_inherit)
 }
@@ -292,13 +296,13 @@ static zend_function_entry winsystem_semaphore_functions[] = {
 	PHP_ME(WinSystemSemaphore, __construct, WinSystemSemaphore___construct_args, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
 	PHP_ME(WinSystemSemaphore, open, WinSystemSemaphore_open_args, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
 	PHP_ME(WinSystemSemaphore, release, WinSystemSemaphore_release_args, ZEND_ACC_PUBLIC)
-	PHP_ME(WinSystemSemaphore, getMaxCount, WinSystemSemaphore_getMaxCount_args, ZEND_ACC_PUBLIC)
 	PHP_ME(WinSystemSemaphore, getName, WinSystemSemaphore_getName_args, ZEND_ACC_PUBLIC)
+	PHP_ME(WinSystemSemaphore, getMaxCount, WinSystemSemaphore_getMaxCount_args, ZEND_ACC_PUBLIC)
 	PHP_ME(WinSystemSemaphore, canInherit, WinSystemSemaphore_canInherit_args, ZEND_ACC_PUBLIC)
 	PHP_ME(WinSystemWaitable, wait, WinSystemWaitable_wait_args, ZEND_ACC_PUBLIC)
 	PHP_ME(WinSystemWaitable, waitMsg, WinSystemWaitable_waitMsg_args, ZEND_ACC_PUBLIC)
 	PHP_ME(WinSystemWaitable, signalAndWait, WinSystemWaitable_signalAndWait_args, ZEND_ACC_PUBLIC)
-	{NULL, NULL, NULL}
+	ZEND_FE_END
 };
 /* }}} */
 
@@ -346,7 +350,7 @@ static void winsystem_semaphore_construction_wrapper(INTERNAL_FUNCTION_PARAMETER
  
 	zend_call_function(&fci, &fci_cache TSRMLS_CC);
 	if (!EG(exception) && tobj->is_constructed == 0)
-		zend_throw_exception_ex(ce_winsystem_exception, 0 TSRMLS_CC,
+		zend_throw_exception_ex(ce_winsystem_runtimeexception, 0 TSRMLS_CC,
 			"parent::__construct() must be called in %s::__construct()", this_ce->name);
 	efree(fci.params);
 	zval_ptr_dtor(&retval_ptr);

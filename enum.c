@@ -64,6 +64,12 @@ ZEND_BEGIN_ARG_INFO(Enum___construct_args, ZEND_SEND_BY_VAL)
 	ZEND_ARG_INFO(0, value)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO(Enum_getName_args, ZEND_SEND_BY_VAL)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO(Enum_getElements_args, ZEND_SEND_BY_VAL)
+ZEND_END_ARG_INFO()
+
 /* {{{ proto void Enum->__construct(mixed value)
                   constructor for enum class, string can be a special case
                   anything else is cast and we attempt to assign */
@@ -159,6 +165,15 @@ PHP_METHOD(Enum, getElements)
 	array_init(return_value);
 	zend_hash_apply_with_arguments(enum_object->elements TSRMLS_CC, (apply_func_args_t)winsystem_enum_collect_elements, 1, return_value);
 }
+/* }}} */
+
+/* {{{ class methods */
+static const zend_function_entry winsystem_enum_methods[] = {
+	PHP_ME(Enum, __construct, Enum___construct_args, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
+	PHP_ME(Enum, getName, Enum_getName_args, ZEND_ACC_PUBLIC)
+	PHP_ME(Enum, getElements, Enum_getElements_args, ZEND_ACC_PUBLIC)
+	ZEND_FE_END
+};
 /* }}} */
 
 /* ----------------------------------------------------------------
@@ -389,17 +404,8 @@ static HashTable* winsystem_enum_debug_info(zval *obj, int *is_temp TSRMLS_DC)
 /* }}} */
 
 /* ----------------------------------------------------------------
-    Win\System\Enum Definition and registration
+    Win\System\Enum Registration
 ------------------------------------------------------------------*/
-
-/* {{{ class methods */
-static const zend_function_entry winsystem_enum_methods[] = {
-	PHP_ME(Enum, __construct, Enum___construct_args, ZEND_ACC_PUBLIC | ZEND_ACC_CTOR)
-	PHP_ME(Enum, getName, NULL, ZEND_ACC_PUBLIC)
-	PHP_ME(Enum, getElements, NULL, ZEND_ACC_PUBLIC)
-	ZEND_FE_END
-};
-/* }}} */
 
 /* {{{ PHP_MINIT_FUNCTION */
 PHP_MINIT_FUNCTION(winsystem_enum)

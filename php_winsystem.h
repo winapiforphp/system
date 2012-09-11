@@ -49,12 +49,13 @@
 #include "php_winsystem_public.h"
 
 /* ----------------------------------------------------------------
-  Typedefs
+  Macros
 ------------------------------------------------------------------*/
+#define PHP_WINSYSTEM_NS ZEND_NS_NAME("Win", "System")
 
 #define PHP_WINSYSTEM_EXCEPTIONS \
 zend_error_handling error_handling; \
-zend_replace_error_handling(EH_THROW, spl_ce_InvalidArgumentException, &error_handling TSRMLS_CC);
+zend_replace_error_handling(EH_THROW, ce_winsystem_invalidargumentexception, &error_handling TSRMLS_CC);
 
 #define PHP_WINSYSTEM_RESTORE_ERRORS \
 zend_restore_error_handling(&error_handling TSRMLS_CC);
@@ -62,59 +63,46 @@ zend_restore_error_handling(&error_handling TSRMLS_CC);
 #define REGISTER_ENUM_CONST(const_name, value, ce) \
 zend_declare_class_constant_long(ce, const_name, sizeof(const_name)-1, (long)value TSRMLS_CC);
 
-/* struct typedefs */
+/* ----------------------------------------------------------------
+  Typedefs
+------------------------------------------------------------------*/
 typedef struct _winsystem_enum_object winsystem_enum_object;
 typedef struct _winsystem_unicode_object winsystem_unicode_object;
+typedef struct _winsystem_timer_callback winsystem_timer_callback;
+typedef struct _winsystem_timer_object winsystem_timer_object;
+typedef struct _winsystem_waitable_object winsystem_waitable_object;
+typedef struct _winsystem_event_object winsystem_event_object;
+typedef struct _winsystem_mutex_object winsystem_mutex_object;
+typedef struct _winsystem_semaphore_object winsystem_semaphore_object;
 
-/* ----------------------------------------------------------------
-  Property Magic
-------------------------------------------------------------------*/
+#ifdef ZTS
+typedef struct _winsystem_thread_data winsystem_thread_data;
+typedef struct _winsystem_thread_object  winsystem_thread_object;
+#endif
 
-/* Property read/write callbacks */
-typedef int (* winsystem_prop_read_t) (winsystem_generic_object *object, zval *member, zval **retval TSRMLS_DC);
-typedef int (* winsystem_prop_write_t)(winsystem_generic_object *object, zval *member, zval *value TSRMLS_DC);
-
-/* Container for read/write callback */
-typedef struct _winsystem_prop_handler {
-	winsystem_prop_read_t  read_func;
-	winsystem_prop_write_t write_func;
-} winsystem_prop_handler;
-
-/* Registers the read and write handlers for a class's property */
-static inline void winsystem_register_prop_handler(HashTable *prop_handlers, zend_class_entry *ce, char *prop_name, 
-												   winsystem_prop_read_t read_func, winsystem_prop_write_t write_func TSRMLS_DC)
-{
-	winsystem_prop_handler handler;
-
-	handler.read_func  = read_func;
-	handler.write_func = write_func;
-
-	zend_hash_add(prop_handlers, prop_name, strlen(prop_name) + 1, &handler, sizeof(winsystem_prop_handler), NULL);
-	zend_declare_property_null(ce, prop_name, strlen(prop_name), ZEND_ACC_PUBLIC TSRMLS_CC);
-}
+/* Names in most things can be either a string or unicode object */
+typedef union _winsystem_name {
+	zval *      unicode_object;
+	char *      string;
+} winsystem_name;
 
 /* ----------------------------------------------------------------
   Class Entries
 ------------------------------------------------------------------*/
+extern zend_class_entry *ce_winsystem_invalidargumentexception;
 extern zend_class_entry *ce_winsystem_codepage;
-
+extern zend_class_entry *ce_winsystem_outofboundsexception;
+extern zend_class_entry *ce_winsystem_runtimeexception;
 extern zend_class_entry *ce_winsystem_event;
 extern zend_class_entry *ce_winsystem_waitable;
-extern zend_class_entry *ce_winsystem_exception;
-extern zend_class_entry *ce_winsystem_argexception;
-extern zend_class_entry *ce_winsystem_versionexception;
-
-extern zend_class_entry *ce_winsystem_service_controller;
-extern zend_object_handlers winsystem_object_handlers;
 
 /* ----------------------------------------------------------------
   Object Globals, lifecycle and static linking
 ------------------------------------------------------------------*/
 ZEND_BEGIN_MODULE_GLOBALS(winsystem)
-	zend_llist processes;
+#ifdef ZTS
 	zend_llist threads;
-	DWORD process_id;
-	DWORD thread_id;
+#endif
 ZEND_END_MODULE_GLOBALS(winsystem)
 
 #ifdef ZTS
@@ -126,18 +114,16 @@ ZEND_END_MODULE_GLOBALS(winsystem)
 PHP_MINIT_FUNCTION(winsystem_enum);
 PHP_MINIT_FUNCTION(winsystem_codepage);
 PHP_MINIT_FUNCTION(winsystem_unicode);
+PHP_MINIT_FUNCTION(winsystem_exceptions);
 
-PHP_MINIT_FUNCTION(winsystem_util);
 PHP_MINIT_FUNCTION(winsystem_waitable);
 PHP_MINIT_FUNCTION(winsystem_mutex);
 PHP_MINIT_FUNCTION(winsystem_semaphore);
 PHP_MINIT_FUNCTION(winsystem_event);
 PHP_MINIT_FUNCTION(winsystem_timer);
-PHP_MINIT_FUNCTION(winsystem_timerqueue);
-PHP_MINIT_FUNCTION(winsystem_thread);
 PHP_MINIT_FUNCTION(winsystem_registry);
-PHP_MINIT_FUNCTION(winsystem_service_controller);
 
+PHP_MINIT_FUNCTION(winsystem_thread);
 PHP_RINIT_FUNCTION(winsystem_thread);
 PHP_RSHUTDOWN_FUNCTION(winsystem_thread);
 PHP_MSHUTDOWN_FUNCTION(winsystem_thread);

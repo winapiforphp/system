@@ -12,7 +12,7 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author: Elizabeth Smith <auroraeosrose@gmail.net>                    |
+  | Author: Elizabeth Smith <auroraeosrose@gmail.com>                    |
   +----------------------------------------------------------------------+
 */
 
@@ -30,18 +30,19 @@ PHP_MINIT_FUNCTION(winsystem)
 	PHP_MINIT(winsystem_enum)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(winsystem_codepage)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(winsystem_unicode)(INIT_FUNC_ARGS_PASSTHRU);
+	PHP_MINIT(winsystem_exceptions)(INIT_FUNC_ARGS_PASSTHRU);
 
-	PHP_MINIT(winsystem_util)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(winsystem_waitable)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(winsystem_mutex)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(winsystem_semaphore)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(winsystem_event)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(winsystem_timer)(INIT_FUNC_ARGS_PASSTHRU);
+
+	PHP_MINIT(winsystem_registry)(INIT_FUNC_ARGS_PASSTHRU);
+
 #ifdef ZTS
-	//PHP_MINIT(winsystem_timerqueue)(INIT_FUNC_ARGS_PASSTHRU);
 	PHP_MINIT(winsystem_thread)(INIT_FUNC_ARGS_PASSTHRU);
 #endif
-	PHP_MINIT(winsystem_registry)(INIT_FUNC_ARGS_PASSTHRU);
 	return SUCCESS;
 }
 
@@ -58,7 +59,6 @@ PHP_MSHUTDOWN_FUNCTION(winsystem)
 /* initialize the thread list */
 PHP_RINIT_FUNCTION(winsystem)
 {
-	zend_llist_init(&WINSYSTEM_G(processes), sizeof(HANDLE), NULL, 1);
 #ifdef ZTS
 	PHP_RINIT(winsystem_thread)(INIT_FUNC_ARGS_PASSTHRU);
 #endif
@@ -72,7 +72,6 @@ PHP_RSHUTDOWN_FUNCTION(winsystem)
 #ifdef ZTS
 	PHP_RSHUTDOWN(winsystem_thread)(SHUTDOWN_FUNC_ARGS_PASSTHRU);
 #endif
-	zend_llist_destroy(&WINSYSTEM_G(processes)); 
 	return SUCCESS;
 }
 

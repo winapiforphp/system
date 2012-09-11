@@ -12,17 +12,25 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author: Elizabeth Smith <auroraeosrose@php.net>                      |
+  | Author: Elizabeth Smith <auroraeosrose@gmail.com>                    |
   +----------------------------------------------------------------------+
 */
 
 #include "php_winsystem.h"
-#include "zend_exceptions.h"
 #include "waitable.h"
 
 zend_class_entry *ce_winsystem_event;
 static zend_object_handlers winsystem_event_object_handlers;
 static zend_function winsystem_event_constructor_wrapper;
+
+struct _winsystem_event_object {
+	zend_object    std;
+	zend_bool      is_constructed;
+	HANDLE         handle;
+	BOOL           can_inherit;
+	zend_bool      is_unicode;
+	winsystem_name name;
+};
 
 /* ----------------------------------------------------------------
   Win\System\Event Userland API
@@ -72,25 +80,24 @@ PHP_METHOD(WinSystemEvent, __construct)
 	zend_bool state = FALSE;
 	zend_bool autoreset = TRUE;
 	HANDLE event_handle;
-	zend_error_handling error_handling;
 	winsystem_event_object *event = (winsystem_event_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
 
-	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_EXCEPTIONS
 	/* version one, use unicode */
-	if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "O|bbb", &unicode, ce_winsystem_unicode, &state, &autoreset, &inherit) != FAILURE) {
+	if (FAILURE != zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "O|bbb", &unicode, ce_winsystem_unicode, &state, &autoreset, &inherit)) {
 		use_unicode = 1;
-	} else if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s!bbb", &name, &name_length, &state, &autoreset, &inherit) == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+	} else if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s!bbb", &name, &name_length, &state, &autoreset, &inherit)) {
+		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	event_attributes.nLength = sizeof(SECURITY_ATTRIBUTES);
 	event_attributes.lpSecurityDescriptor = NULL;
 	event_attributes.bInheritHandle = inherit;
 
 	if (use_unicode) {
-		event_handle = CreateEventW(&event_attributes, state, autoreset, php_winsystem_get_unicode_wchar(&unicode TSRMLS_CC));
+		event_handle = CreateEventW(&event_attributes, state, autoreset, php_winsystem_unicode_get_wchar(&unicode TSRMLS_CC));
 	} else {
 		event_handle = CreateEventA(&event_attributes, state, autoreset, name);
 	}
@@ -100,9 +107,9 @@ PHP_METHOD(WinSystemEvent, __construct)
 		DWORD error_num = GetLastError();
 
 		if (error_num == ERROR_INVALID_HANDLE) {
-			zend_throw_exception(ce_winsystem_exception, "Name is already in use for waitable object", error_num TSRMLS_CC);
+			zend_throw_exception(ce_winsystem_runtimeexception, "Name is already in use for waitable object", error_num TSRMLS_CC);
 		} else {
-			winsystem_create_error(error_num, ce_winsystem_exception TSRMLS_CC);
+			winsystem_create_error(error_num, ce_winsystem_runtimeexception TSRMLS_CC);
 		}
 		return;
 	}
@@ -137,24 +144,22 @@ PHP_METHOD(WinSystemEvent, open)
 	zend_bool inherit = TRUE;
 	HANDLE event_handle;
 	winsystem_event_object *event;
-	zend_error_handling error_handling;
 
-	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
-
+	PHP_WINSYSTEM_EXCEPTIONS
 	/* version one, use unicode */
-	if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "O|b", &unicode, ce_winsystem_unicode, &inherit) != FAILURE) {
+	if (FAILURE != zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET, ZEND_NUM_ARGS() TSRMLS_CC, "O|b", &unicode, ce_winsystem_unicode, &inherit)) {
 		use_unicode = 1;
-	} else if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &name, &name_length, &inherit) == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+	} else if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|b", &name, &name_length, &inherit)) {
+		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	object_init_ex(return_value, ce_winsystem_event);
 	event = (winsystem_event_object *)zend_object_store_get_object(return_value TSRMLS_CC);
 
 	if (use_unicode) {
-		event_handle = OpenEventW(SYNCHRONIZE, inherit, php_winsystem_get_unicode_wchar(&unicode TSRMLS_CC));
+		event_handle = OpenEventW(SYNCHRONIZE, inherit, php_winsystem_unicode_get_wchar(&unicode TSRMLS_CC));
 	} else {
 		event_handle = OpenEventA(SYNCHRONIZE, inherit, name);
 	}
@@ -163,9 +168,9 @@ PHP_METHOD(WinSystemEvent, open)
 		DWORD error_num = GetLastError();
 
 		if (error_num == ERROR_FILE_NOT_FOUND) {
-			zend_throw_exception(ce_winsystem_exception, "Event was not found and could not be opened", error_num TSRMLS_CC);
+			zend_throw_exception(ce_winsystem_runtimeexception, "Event was not found and could not be opened", error_num TSRMLS_CC);
 		} else {
-			winsystem_create_error(error_num, ce_winsystem_exception TSRMLS_CC);
+			winsystem_create_error(error_num, ce_winsystem_runtimeexception TSRMLS_CC);
 		}
 		return;
 	}
@@ -188,15 +193,14 @@ PHP_METHOD(WinSystemEvent, open)
        returns the current name of the event or null if it's unnamed */
 PHP_METHOD(WinSystemEvent, getName)
 {
-	zend_error_handling error_handling;
 	winsystem_event_object *event = (winsystem_event_object*)zend_object_store_get_object(getThis() TSRMLS_CC);
-	
-	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters_none() == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+
+	PHP_WINSYSTEM_EXCEPTIONS
+	if (FAILURE == zend_parse_parameters_none()) {
+		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	if (event->is_unicode) {
 		RETURN_ZVAL(event->name.unicode_object, 1, 0);
@@ -211,15 +215,14 @@ PHP_METHOD(WinSystemEvent, getName)
        resets an event - not needed for autoreset signals */
 PHP_METHOD(WinSystemEvent, reset)
 {
-	zend_error_handling error_handling;
 	winsystem_event_object *event = (winsystem_event_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
-	
-	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters_none() == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+
+	PHP_WINSYSTEM_EXCEPTIONS
+	if (FAILURE == zend_parse_parameters_none()) {
+		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	RETURN_BOOL(ResetEvent(event->handle))
 }
@@ -229,15 +232,14 @@ PHP_METHOD(WinSystemEvent, reset)
        sets event to "signaled" state */
 PHP_METHOD(WinSystemEvent, set)
 {
-	zend_error_handling error_handling;
 	winsystem_event_object *event = (winsystem_event_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
-	
-	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters_none() == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+
+	PHP_WINSYSTEM_EXCEPTIONS
+	if (FAILURE == zend_parse_parameters_none()) {
+		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	RETURN_BOOL(SetEvent(event->handle))
 }
@@ -247,15 +249,14 @@ PHP_METHOD(WinSystemEvent, set)
        pulses event - sets it to the on and then off state */
 PHP_METHOD(WinSystemEvent, pulse)
 {
-	zend_error_handling error_handling;
 	winsystem_event_object *event = (winsystem_event_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
-	
-	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters_none() == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+
+	PHP_WINSYSTEM_EXCEPTIONS
+	if (FAILURE == zend_parse_parameters_none()) {
+		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	RETURN_BOOL(PulseEvent(event->handle))
 }
@@ -265,15 +266,14 @@ PHP_METHOD(WinSystemEvent, pulse)
       if a event was created with a "can inherit" flag, meaning child processes can grab it */
 PHP_METHOD(WinSystemEvent, canInherit)
 {
-	zend_error_handling error_handling;
 	winsystem_event_object *event = (winsystem_event_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
-	
-	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters_none() == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+
+	PHP_WINSYSTEM_EXCEPTIONS
+	if (FAILURE == zend_parse_parameters_none()) {
+		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	RETURN_BOOL(event->can_inherit)
 }
@@ -291,7 +291,7 @@ static zend_function_entry winsystem_event_functions[] = {
 	PHP_ME(WinSystemWaitable, wait, WinSystemWaitable_wait_args, ZEND_ACC_PUBLIC)
 	PHP_ME(WinSystemWaitable, waitMsg, WinSystemWaitable_waitMsg_args, ZEND_ACC_PUBLIC)
 	PHP_ME(WinSystemWaitable, signalAndWait, WinSystemWaitable_signalAndWait_args, ZEND_ACC_PUBLIC)
-	{NULL, NULL, NULL}
+	ZEND_FE_END
 };
 /* }}} */
 
@@ -337,7 +337,7 @@ static void winsystem_event_construction_wrapper(INTERNAL_FUNCTION_PARAMETERS) {
 
 	zend_call_function(&fci, &fci_cache TSRMLS_CC);
 	if (!EG(exception) && tobj->is_constructed == 0)
-		zend_throw_exception_ex(ce_winsystem_exception, 0 TSRMLS_CC,
+		zend_throw_exception_ex(ce_winsystem_runtimeexception, 0 TSRMLS_CC,
 			"parent::__construct() must be called in %s::__construct()", this_ce->name);
 	efree(fci.params);
 	zval_ptr_dtor(&retval_ptr);

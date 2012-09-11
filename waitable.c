@@ -12,17 +12,23 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author: Elizabeth Smith <auroraeosrose@php.net>                      |
+  | Author: Elizabeth Smith <auroraeosrose@gmail.com>                    |
   +----------------------------------------------------------------------+
 */
 
 #include "php_winsystem.h"
-#include "zend_exceptions.h"
 #include "waitable.h"
 
 zend_class_entry *ce_winsystem_waitable;
 zend_class_entry *ce_winsystem_wait;
 zend_class_entry *ce_winsystem_waitmask;
+
+/* waitable object */
+struct _winsystem_waitable_object {
+	zend_object  std;
+	zend_bool    is_constructed;
+	HANDLE       handle;
+};
 
 /* ----------------------------------------------------------------
   \Win\System\Wait Userland API
@@ -55,14 +61,13 @@ PHP_METHOD(WinSystemWait, multiple)
 	DWORD i = 0;
 	HANDLE *handles = NULL;
 	winsystem_waitable_object *wait_object;
-	zend_error_handling error_handling;
 
-	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "H|lbb", &objects, &milliseconds, &wait_all, &alertable) == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_EXCEPTIONS
+	if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "H|lbb", &objects, &milliseconds, &wait_all, &alertable)) {
+		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	handles = emalloc(sizeof(HANDLE) * MAXIMUM_WAIT_OBJECTS);
 
@@ -76,7 +81,7 @@ PHP_METHOD(WinSystemWait, multiple)
 			handles[i] = wait_object->handle;
 			i++;
 		} else {
-			zend_throw_exception(ce_winsystem_argexception, "All objects must implement Waitable in order to be used", 0 TSRMLS_CC);
+			zend_throw_exception(ce_winsystem_outofboundsexception, "All objects must implement Waitable in order to be used", 0 TSRMLS_CC);
 			efree(handles);
 			return;
 		}
@@ -86,13 +91,13 @@ PHP_METHOD(WinSystemWait, multiple)
 	}
 
 	if (i < 1) {
-		zend_throw_exception(ce_winsystem_argexception, "No objects were registered to watch", 0 TSRMLS_CC);
+		zend_throw_exception(ce_winsystem_outofboundsexception, "No objects were registered to watch", 0 TSRMLS_CC);
 		return;
 	}
 
 	ret = WaitForMultipleObjectsEx(i, handles, wait_all, milliseconds, alertable);
 	if (ret == WAIT_FAILED) {
-		winsystem_create_error(GetLastError(), ce_winsystem_exception TSRMLS_CC);
+		winsystem_create_error(GetLastError(), ce_winsystem_runtimeexception TSRMLS_CC);
 	}
 	efree(handles);
 	RETURN_LONG(ret);
@@ -114,14 +119,13 @@ PHP_METHOD(WinSystemWait, multipleMsg)
 	DWORD i = 0;
 	HANDLE *handles = NULL;
 	winsystem_waitable_object *wait_object;
-	zend_error_handling error_handling;
 
-	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "H|lll", &objects, &milliseconds, &mask, &flags) == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_EXCEPTIONS
+	if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "H|lll", &objects, &milliseconds, &mask, &flags)) {
+		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	handles = emalloc(sizeof(HANDLE) * MAXIMUM_WAIT_OBJECTS);
 
@@ -135,7 +139,7 @@ PHP_METHOD(WinSystemWait, multipleMsg)
 			handles[i] = wait_object->handle;
 			i++;
 		} else {
-			zend_throw_exception(ce_winsystem_argexception, "All objects must implement Waitable in order to be used", 0 TSRMLS_CC);
+			zend_throw_exception(ce_winsystem_outofboundsexception, "All objects must implement Waitable in order to be used", 0 TSRMLS_CC);
 			efree(handles);
 			return;
 		}
@@ -145,13 +149,13 @@ PHP_METHOD(WinSystemWait, multipleMsg)
 	}
 
 	if (i < 1) {
-		zend_throw_exception(ce_winsystem_argexception, "No objects were registered to watch", 0 TSRMLS_CC);
+		zend_throw_exception(ce_winsystem_outofboundsexception, "No objects were registered to watch", 0 TSRMLS_CC);
 		return;
 	}
 
 	ret = MsgWaitForMultipleObjectsEx(i, handles, milliseconds, mask, flags);
 	if (ret == WAIT_FAILED) {
-		winsystem_create_error(GetLastError(), ce_winsystem_exception TSRMLS_CC);
+		winsystem_create_error(GetLastError(), ce_winsystem_runtimeexception TSRMLS_CC);
 	}
 	efree(handles);
 	RETURN_LONG(ret);
@@ -162,7 +166,7 @@ PHP_METHOD(WinSystemWait, multipleMsg)
 static zend_function_entry winsystem_wait_functions[] = {
 	PHP_ME(WinSystemWait, multiple, WinSystemWait_multiple_args, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
 	PHP_ME(WinSystemWait, multipleMsg, WinSystemWait_multipleMsg_args, ZEND_ACC_PUBLIC | ZEND_ACC_STATIC)
-	{NULL, NULL, NULL}
+	ZEND_FE_END
 };
 /* }}} */
 
@@ -179,19 +183,18 @@ PHP_METHOD(WinSystemWaitable, wait)
 	DWORD ret;
 	long milliseconds = INFINITE;
 	zend_bool alertable = FALSE;
-	zend_error_handling error_handling;
 	winsystem_waitable_object *object = (winsystem_waitable_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
 
-	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|lb", &milliseconds, &alertable) == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_EXCEPTIONS
+	if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|lb", &milliseconds, &alertable)) {
+		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	ret = WaitForSingleObjectEx(object->handle, milliseconds, alertable);
 	if (ret == WAIT_FAILED) {
-		winsystem_create_error(GetLastError(), ce_winsystem_exception TSRMLS_CC);
+		winsystem_create_error(GetLastError(), ce_winsystem_runtimeexception TSRMLS_CC);
 	}
 	RETURN_LONG(ret);
 }
@@ -207,15 +210,14 @@ PHP_METHOD(WinSystemWaitable, waitMsg)
 	zend_bool alertable = FALSE;
 	long flags = 0;
 	HANDLE *handles = NULL;
-	zend_error_handling error_handling;
 	winsystem_waitable_object *object = (winsystem_waitable_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
 
-	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|llb", &milliseconds, &mask, &alertable) == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_EXCEPTIONS
+	if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|llb", &milliseconds, &mask, &alertable)) {
+		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	handles = emalloc(sizeof(HANDLE) * 1);
 	handles[0] = object->handle;
@@ -226,7 +228,7 @@ PHP_METHOD(WinSystemWaitable, waitMsg)
 
 	ret = MsgWaitForMultipleObjectsEx(1, handles, milliseconds, mask, flags);
 	if (ret == WAIT_FAILED) {
-		winsystem_create_error(GetLastError(), ce_winsystem_exception TSRMLS_CC);
+		winsystem_create_error(GetLastError(), ce_winsystem_runtimeexception TSRMLS_CC);
 	}
 	efree(handles);
 
@@ -243,21 +245,20 @@ PHP_METHOD(WinSystemWaitable, signalAndWait)
 	zend_bool alertable = FALSE;
 	zval *signal_zval = NULL;
 	winsystem_waitable_object *signal;
-	zend_error_handling error_handling;
 	winsystem_waitable_object *object = (winsystem_waitable_object *)zend_object_store_get_object(getThis() TSRMLS_CC);
 
-	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O|lb", &signal_zval, ce_winsystem_waitable, &milliseconds, &alertable) == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_EXCEPTIONS
+	if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O|lb", &signal_zval, ce_winsystem_waitable, &milliseconds, &alertable)) {
+		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	signal = (winsystem_waitable_object *)zend_object_store_get_object(signal_zval TSRMLS_CC);
 
 	ret = SignalObjectAndWait(signal->handle, object->handle, milliseconds, alertable);
 	if (ret == WAIT_FAILED) {
-		winsystem_create_error(GetLastError(), ce_winsystem_exception TSRMLS_CC);
+		winsystem_create_error(GetLastError(), ce_winsystem_runtimeexception TSRMLS_CC);
 	}
 	RETURN_LONG(ret);
 }
@@ -268,7 +269,7 @@ static zend_function_entry winsystem_waitable_functions[] = {
 	PHP_ABSTRACT_ME(WinSystemWaitable, wait, WinSystemWaitable_wait_args)
 	PHP_ABSTRACT_ME(WinSystemWaitable, waitMsg, WinSystemWaitable_waitMsg_args)
 	PHP_ABSTRACT_ME(WinSystemWaitable, signalAndWait, WinSystemWaitable_signalAndWait_args)
-	{NULL, NULL, NULL}
+	ZEND_FE_END
 };
 /* }}} */
 

@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2011 The PHP Group                                |
+  | Copyright (c) 1997-2012 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -12,7 +12,7 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author: Elizabeth Smith <auroraeosrose@php.net>                      |
+  | Author: Elizabeth Smith <auroraeosrose@gmail.com>                    |
   +----------------------------------------------------------------------+
 */
 
@@ -36,6 +36,21 @@ TsHashTable winsystem_threads_globals;
 DWORD WINAPI php_winsystem_thread_callback(LPVOID lpParam);
 int php_winsystem_thread_copy_zval(zval **retval, zval *src, void ***prev_tsrm_ls TSRMLS_DC);
 static void winsystem_finish_thread(void *data);
+
+struct _winsystem_thread_data {
+	char *   file;
+	void *** parent_tsrmls;
+	HANDLE   start_event;
+	HANDLE   thread_handle;
+	DWORD    thread_id;
+	zend_fcall_info callback_info;
+};
+
+struct _winsystem_thread_object {
+	zend_object  std;
+	zend_bool    is_constructed;
+	HANDLE       handle;
+};
 
 /* ----------------------------------------------------------------
   Win\System\Thread Userland API
@@ -78,14 +93,13 @@ PHP_METHOD(WinSystemThread, start)
 	zend_fcall_info_cache fcache;
 	zval ***args = NULL;
 	int argc = 0;
-	zend_error_handling error_handling;
 
-	zend_replace_error_handling(EH_THROW, ce_winsystem_argexception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "f*", &finfo, &fcache, &args, &argc) == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_EXCEPTIONS
+	if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "f*", &finfo, &fcache, &args, &argc)) {
+		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	thread_callback_data = pecalloc(1, sizeof(winsystem_thread_data), 1);
 	zend_fcall_info_argp(&finfo TSRMLS_CC, argc, args);
@@ -102,7 +116,7 @@ PHP_METHOD(WinSystemThread, start)
 
 	thread_callback_data->start_event = CreateEvent(NULL, TRUE, FALSE, NULL);
 	if (thread_callback_data->start_event == NULL) {
-		winsystem_create_error(GetLastError(), ce_winsystem_exception TSRMLS_CC);
+		winsystem_create_error(GetLastError(), ce_winsystem_runtimeexception TSRMLS_CC);
 		return;
 	}
 
@@ -141,14 +155,13 @@ PHP_METHOD(WinSystemThread, set)
 	char *serialized_string = NULL;
 	php_serialize_data_t var_hash;
 	zval *var;
-	zend_error_handling error_handling;
 
-	zend_replace_error_handling(EH_THROW, ce_winsystem_exception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz", &var_name, &var_name_length, &var) == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_EXCEPTIONS
+	if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz", &var_name, &var_name_length, &var)) {
+		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	/* serialize variables that will be shared */
 	PHP_VAR_SERIALIZE_INIT(var_hash);
@@ -176,14 +189,13 @@ PHP_METHOD(WinSystemThread, get)
 	unsigned int var_name_length;
 	char * new_var = NULL;
 	php_unserialize_data_t var_hash;
-	zend_error_handling error_handling;
 
-	zend_replace_error_handling(EH_THROW, ce_winsystem_exception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &var_name, &var_name_length) == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_EXCEPTIONS
+	if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &var_name, &var_name_length)) {
+		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	/* grab the string from the hash */
 	if (FAILURE == zend_ts_hash_find(&winsystem_threads_globals, var_name, var_name_length + 1, (void **) &new_var)) {
@@ -204,14 +216,13 @@ PHP_METHOD(WinSystemThread, isset)
 {
 	char *var_name;
 	unsigned int var_name_length;
-	zend_error_handling error_handling;
 
-	zend_replace_error_handling(EH_THROW, ce_winsystem_exception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &var_name, &var_name_length) == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_EXCEPTIONS
+	if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &var_name, &var_name_length)) {
+		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	/* do zend_hash_exists */
 	RETURN_BOOL(zend_ts_hash_exists(&winsystem_threads_globals, var_name, var_name_length + 1));
@@ -224,14 +235,13 @@ PHP_METHOD(WinSystemThread, unset)
 {
 	char *var_name;
 	unsigned int var_name_length;
-	zend_error_handling error_handling;
 
-	zend_replace_error_handling(EH_THROW, ce_winsystem_exception, &error_handling TSRMLS_CC);
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &var_name, &var_name_length) == FAILURE) {
-		zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_EXCEPTIONS
+	if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &var_name, &var_name_length)) {
+		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
-	zend_restore_error_handling(&error_handling TSRMLS_CC);
+	PHP_WINSYSTEM_RESTORE_ERRORS
 
 	/* delete it */
 	RETURN_BOOL(zend_ts_hash_del(&winsystem_threads_globals, var_name, var_name_length + 1));
@@ -249,7 +259,7 @@ static zend_function_entry winsystem_thread_functions[] = {
 	PHP_ME(WinSystemWaitable, wait, WinSystemWaitable_wait_args, ZEND_ACC_PUBLIC)
 	PHP_ME(WinSystemWaitable, waitMsg, WinSystemWaitable_waitMsg_args, ZEND_ACC_PUBLIC)
 	PHP_ME(WinSystemWaitable, signalAndWait, WinSystemWaitable_signalAndWait_args, ZEND_ACC_PUBLIC)
-	{NULL, NULL, NULL}
+	ZEND_FE_END
 };
 /* }}} */
 
