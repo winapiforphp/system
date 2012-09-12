@@ -21,9 +21,11 @@ var_dump($page);
 bool(true)
 object(Win\System\Codepage)#1 (2) {
   ["__elements"]=>
-  array(148) {
+  array(149) {
     ["UTF16"]=>
     int(1200)
+    ["UTF16BE"]=>
+    int(1201)
     ["ANSI"]=>
     int(0)
     ["THREAD_ANSI"]=>

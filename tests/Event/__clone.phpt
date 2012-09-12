@@ -2,7 +2,7 @@
 Win\System\Event clone
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
@@ -19,7 +19,7 @@ var_dump($event1 !== $event2);
 
 // new unicode mutex
 $string = 'काचं शक्नोम्यत्तुम् । नोपहिनस्ति माम् ॥';
-$unicode = new Unicode($string, CodePage::UTF8);
+$unicode = new Unicode($string, new CodePage(CodePage::UTF8));
 $event1 = new Event($unicode);
 
 $event2 = clone $event1;

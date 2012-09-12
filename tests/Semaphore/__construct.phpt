@@ -2,7 +2,7 @@
 Win\System\Semaphore->__construct() method
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
@@ -10,7 +10,9 @@ use Win\System\Semaphore;
 use Win\System\Event;
 use Win\System\Unicode;
 use Win\System\CodePage;
-use Win\System\ArgumentException;
+use Win\System\InvalidArgumentException;
+use Win\System\RuntimeException;
+use Win\System\OutOfBoundsException;
 
 // new unnamed semaphore with default count and max count
 $semaphore = new Semaphore();
@@ -25,13 +27,13 @@ var_dump($semaphore->getMaxCount());
 // try to open Event with same name
 try {
     $event = new Event('foobar');
-} catch (Exception $e) {
+} catch (RuntimeException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // new unicode mutex
 $string = 'काचं शक्नोम्यत्तुम् । नोपहिनस्ति माम् ॥';
-$unicode = new Unicode($string, CodePage::UTF8);
+$unicode = new Unicode($string, new CodePage(CodePage::UTF8));
 $semaphore = new Semaphore($unicode);
 var_dump($semaphore->getName() === $unicode);
 var_dump($semaphore->getMaxCount());
@@ -39,7 +41,7 @@ var_dump($semaphore->getMaxCount());
 // try to open and own same mutex - will blow up
 try {
     $semaphore = new Semaphore($unicode, true);
-} catch (Exception $e) {
+} catch (RuntimeException $e) {
     echo $e->getMessage(), "\n";
 }
 
@@ -57,56 +59,56 @@ var_dump($semaphore->canInherit());
 // requires 0-4 args, 5 is too many
 try {
     $semaphore = new Semaphore(1, 1, 1, 1, 1);
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // arg 1 must be stringable
 try {
     $semaphore = new Semaphore(array(), 1, 1, 1);
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // arg 2 must be longable
 try {
     $semaphore = new Semaphore('string', array(), 1, 1);
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // arg 3 must be longable
 try {
     $semaphore = new Semaphore('string', 1, array(), 1);
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // arg 4 must be booleanable
 try {
     $semaphore = new Semaphore('string', 1, 1, array());
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // arg 2 must be > 0
 try {
     $semaphore = new Semaphore('string', -1, 1);
-} catch (ArgumentException $e) {
+} catch (OutOfBoundsException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // arg 3 must be > 1
 try {
     $semaphore = new Semaphore('string', 0, 0);
-} catch (ArgumentException $e) {
+} catch (OutOfBoundsException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // arg 3 must be > arg 2
 try {
     $semaphore = new Semaphore('string', 10, 3);
-} catch (ArgumentException $e) {
+} catch (OutOfBoundsException $e) {
     echo $e->getMessage(), "\n";
 }
 ?>

@@ -2,12 +2,12 @@
 Win\System\Mutex->release() method
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
 use Win\System\Mutex;
-use Win\System\ArgumentException;
+use Win\System\InvalidArgumentException;
 
 // create an owned unnamed mutex
 $mutex = new Mutex(null, true);
@@ -27,7 +27,7 @@ var_dump($mutex->release());
 // bad number of args
 try {
     $mutex->release(1);
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 ?>

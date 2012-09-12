@@ -2,7 +2,7 @@
 phpversion('winsystem') version
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/skipif.inc';
 ?>
 --FILE--
 <?php

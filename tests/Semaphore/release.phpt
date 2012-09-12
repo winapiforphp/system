@@ -2,12 +2,13 @@
 Win\System\Semaphore->release() method
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
 use Win\System\Semaphore;
-use Win\System\ArgumentException;
+use Win\System\InvalidArgumentException;
+use Win\System\RuntimeException;
 
 // create a default semaphore
 $semaphore = new Semaphore();
@@ -18,7 +19,7 @@ var_dump($semaphore->release());
 // cant' increase it again, it only goes up to the maximum
 try {
     $semaphore->release();
-} catch (Exception $e) {
+} catch (RuntimeException $e) {
    echo $e->getMessage(), "\n";
 }
 
@@ -34,14 +35,14 @@ var_dump($semaphore->release());
 // maximum is 1 arg
 try {
     $semaphore->release(1, 1);
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // arg must be longable
 try {
     $semaphore->release(array());
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 ?>

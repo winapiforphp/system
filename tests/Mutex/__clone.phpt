@@ -2,7 +2,7 @@
 Win\System\Mutex clone
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
@@ -20,7 +20,7 @@ var_dump($mutex1 !== $mutex2);
 
 // new unicode mutex
 $string = 'काचं शक्नोम्यत्तुम् । नोपहिनस्ति माम् ॥';
-$unicode = new Unicode($string, CodePage::UTF8);
+$unicode = new Unicode($string, new CodePage(CodePage::UTF8));
 $mutex1 = new Mutex($unicode);
 
 $mutex2 = clone $mutex1;

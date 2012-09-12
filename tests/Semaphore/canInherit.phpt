@@ -2,12 +2,12 @@
 Win\System\Semaphore->canInherit() method
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
 use Win\System\Semaphore;
-use Win\System\ArgumentException;
+use Win\System\InvalidArgumentException;
 
 // create a normal mutex, default inherit is true
 $semaphore = new Semaphore();
@@ -24,7 +24,7 @@ var_dump($semaphore->canInherit());
 // bad number of args
 try {
     $semaphore->canInherit(1);
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 ?>

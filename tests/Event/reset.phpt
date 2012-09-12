@@ -2,12 +2,12 @@
 Win\System\Event->reset() method
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
 use Win\System\Event;
-use Win\System\ArgumentException;
+use Win\System\InvalidArgumentException;
 
 // create a non auto reset Event
 $event = new Event(null, true);
@@ -21,7 +21,7 @@ var_dump($event->reset());
 // bad number of args
 try {
     $event->reset(1);
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 ?>

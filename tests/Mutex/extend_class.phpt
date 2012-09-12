@@ -2,12 +2,12 @@
 Extending Mutex
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
 use Win\System\Mutex;
-use Win\System\Exception;
+use Win\System\RuntimeException;
 
 class goodMutex extends Mutex {}
 
@@ -30,7 +30,7 @@ var_dump($mutex->getName());
 // bad mutex will throw exception
 try {
     $mutex = new badMutex();
-} catch (Exception $e) {
+} catch (RuntimeException $e) {
     echo $e->getMessage(), "\n";
 }
 

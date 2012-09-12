@@ -2,7 +2,7 @@
 Win\System\Timer Reflection
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
@@ -42,12 +42,7 @@ Class [ <internal:winsystem> class Win\System\Timer implements Win\System\Waitab
 
     Method [ <internal:winsystem> public method cancel ] {
 
-      - Parameters [5] {
-        Parameter #0 [ <required> $interval ]
-        Parameter #1 [ <required> $period ]
-        Parameter #2 [ <required> $resume ]
-        Parameter #3 [ <required> $callback ]
-        Parameter #4 [ <required> $... ]
+      - Parameters [0] {
       }
     }
 
@@ -58,7 +53,7 @@ Class [ <internal:winsystem> class Win\System\Timer implements Win\System\Waitab
         Parameter #1 [ <required> $period ]
         Parameter #2 [ <required> $resume ]
         Parameter #3 [ <required> $callback ]
-        Parameter #4 [ <required> $... ]
+        Parameter #4 [ <optional> $... ]
       }
     }
 

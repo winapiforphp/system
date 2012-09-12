@@ -2,7 +2,7 @@
 Win\System\Timer clone
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
@@ -26,7 +26,7 @@ var_dump($timer1 !== $timer2);
 
 // new unicode mutex
 $string = 'काचं शक्नोम्यत्तुम् । नोपहिनस्ति माम् ॥';
-$unicode = new Unicode($string, CodePage::UTF8);
+$unicode = new Unicode($string, new CodePage(CodePage::UTF8));
 $timer1 = new Timer($unicode);
 
 $timer2 = clone $timer1;

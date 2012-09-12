@@ -100,6 +100,7 @@ extern zend_class_entry *ce_winsystem_waitable;
   Object Globals, lifecycle and static linking
 ------------------------------------------------------------------*/
 ZEND_BEGIN_MODULE_GLOBALS(winsystem)
+	zend_llist processes;
 #ifdef ZTS
 	zend_llist threads;
 #endif

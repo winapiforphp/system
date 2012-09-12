@@ -63,7 +63,7 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO(WinSystemTimer_cancel_args, ZEND_SEND_BY_VAL)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO(WinSystemTimer_set_args, ZEND_SEND_BY_VAL)
+ZEND_BEGIN_ARG_INFO_EX(WinSystemTimer_set_args, ZEND_SEND_BY_VAL, ZEND_RETURN_VALUE, 4)
 	ZEND_ARG_INFO(0, interval)
 	ZEND_ARG_INFO(0, period)
 	ZEND_ARG_INFO(0, resume)
@@ -268,14 +268,13 @@ PHP_METHOD(WinSystemTimer, set)
 	winsystem_timer_object *timer = (winsystem_timer_object*)zend_object_store_get_object(getThis() TSRMLS_CC);
 
 	PHP_WINSYSTEM_EXCEPTIONS
+	/* This is dirty as sin, but I need to be able to tell if we hit a callback */
+	finfo.size = 0;
 	if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l|lbf*", &interval, &period, &resume, &finfo, &fcache, &args, &argc)) {
 		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
 	PHP_WINSYSTEM_RESTORE_ERRORS
-
-	/* This is dirty as sin, but I need to be able to tell if we hit a callback */
-	finfo.size = 0;
 
 	/* the earlier hack makes this not blow up, even if no callback is hit */
 	if (finfo.size > 0) {

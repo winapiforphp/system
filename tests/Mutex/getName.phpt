@@ -2,12 +2,12 @@
 Win\System\Mutex->getName() method
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
 use Win\System\Mutex;
-use Win\System\ArgumentException;
+use Win\System\InvalidArgumentException;
 use Win\System\Unicode;
 use Win\System\CodePage;
 
@@ -29,7 +29,7 @@ var_dump($mutex->getName());
 
 // create a unicode mutex
 $string = 'काचं शक्नोम्यत्तुम् । नोपहिनस्ति माम् ॥';
-$unicode = new Unicode($string, CodePage::UTF8);
+$unicode = new Unicode($string, new CodePage(CodePage::UTF8));
 $mutex = new Mutex($unicode);
 var_dump($mutex->getName() === $unicode);
 
@@ -39,7 +39,7 @@ var_dump($mutex->getName() instanceof Unicode);
 // bad number of args
 try {
     $mutex->getName(1);
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 ?>

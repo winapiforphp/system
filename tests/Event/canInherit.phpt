@@ -2,12 +2,12 @@
 Win\System\Event->canInherit() method
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
 use Win\System\Event;
-use Win\System\ArgumentException;
+use  Win\System\InvalidArgumentException;
 
 // create a normal event, default inherit is true
 $event = new Event();
@@ -24,7 +24,7 @@ var_dump($event->canInherit());
 // bad number of args
 try {
     $event->canInherit(1);
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 ?>

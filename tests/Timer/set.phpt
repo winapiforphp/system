@@ -2,12 +2,12 @@
 Win\System\Timer->set() method
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
 use Win\System\Timer;
-use Win\System\ArgumentException;
+use Win\System\InvalidArgumentException;
 
 function timer () {
     echo "Timing\n";
@@ -76,7 +76,7 @@ var_dump($timer->wait(30, true));
 // Requires at least 1 arg
 try {
     var_dump($timer->set());
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 
@@ -86,28 +86,28 @@ var_dump($timer->set(1, 1, 1, 'mytimer', 1, 1, 1, 1));
 // arg 1 must be int
 try {
     var_dump($timer->set(array()));
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // arg 2 must be int
 try {
     var_dump($timer->set(1, array()));
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // arg 3 must be bool
 try {
     var_dump($timer->set(1, 1, array()));
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // arg 4 must be callable
 try {
     var_dump($timer->set(1, 1, 1, ''));
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 ?>

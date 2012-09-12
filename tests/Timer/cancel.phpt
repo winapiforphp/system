@@ -2,11 +2,12 @@
 Win\System\Timer->cancel() method
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
 use Win\System\Timer;
+use Win\System\InvalidArgumentException;
 
 function mytimer () {}
 
@@ -40,7 +41,7 @@ var_dump($timer->cancel());
 // bad number of args
 try {
     $timer->cancel(1);
-} catch (Exception $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 ?>

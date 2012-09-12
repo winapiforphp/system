@@ -6,7 +6,8 @@ include __DIR__ . '/../skipif.inc';
 ?>
 --FILE--
 <?php
-use Win\System\Enum as Enum;
+use Win\System\Enum;
+use Win\System\InvalidArgumentException;
 
 class Test extends Enum {}
 

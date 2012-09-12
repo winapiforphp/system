@@ -2,12 +2,12 @@
 Win\System\Mutex->wait() method
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
 use Win\System\Mutex;
-use Win\System\ArgumentException;
+use Win\System\InvalidArgumentException;
 
 $mutex = new Mutex();
 
@@ -18,21 +18,21 @@ var_dump($mutex->wait(30, true));
 // no more then 2 args
 try {
    var_dump($mutex->wait(1, 1, 1));
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // arg 1 must be int
 try {
     var_dump($mutex->wait(array()));
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // arg 2 must be boolean
 try {
     var_dump($mutex->wait(1, array()));
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 ?>

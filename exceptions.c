@@ -75,11 +75,12 @@ PHP_MINIT_FUNCTION(winsystem_exceptions)
 	ce_winsystem_versionexception = zend_register_internal_class_ex(&version_ce, ce_winsystem_runtimeexception, NULL TSRMLS_CC);
 
 	INIT_NS_CLASS_ENTRY(arg_ce, PHP_WINSYSTEM_NS, "InvalidArgumentException", NULL);
-	ce_winsystem_invalidargumentexception = zend_register_internal_class_ex(&arg_ce, spl_ce_RuntimeException, NULL TSRMLS_CC);
+	ce_winsystem_invalidargumentexception = zend_register_internal_class_ex(&arg_ce, spl_ce_InvalidArgumentException, NULL TSRMLS_CC);
 	zend_class_implements(ce_winsystem_invalidargumentexception TSRMLS_CC, 1, ce_winsystem_exception);
 
 	INIT_NS_CLASS_ENTRY(bounds_ce, PHP_WINSYSTEM_NS, "OutOfBoundsException", NULL);
 	ce_winsystem_outofboundsexception = zend_register_internal_class_ex(&bounds_ce, spl_ce_OutOfBoundsException, NULL TSRMLS_CC);
+	zend_class_implements(ce_winsystem_outofboundsexception TSRMLS_CC, 1, ce_winsystem_exception);
 
 	return SUCCESS;
 }

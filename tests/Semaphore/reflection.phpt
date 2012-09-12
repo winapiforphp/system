@@ -2,7 +2,7 @@
 Win\System\Sempahore Reflection
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
@@ -43,17 +43,18 @@ Class [ <internal:winsystem> class Win\System\Semaphore implements Win\System\Wa
 
     Method [ <internal:winsystem> public method release ] {
 
+      - Parameters [1] {
+        Parameter #0 [ <optional> $count ]
+      }
+    }
+
+    Method [ <internal:winsystem> public method getName ] {
+
       - Parameters [0] {
       }
     }
 
     Method [ <internal:winsystem> public method getMaxCount ] {
-
-      - Parameters [0] {
-      }
-    }
-
-    Method [ <internal:winsystem> public method getName ] {
 
       - Parameters [0] {
       }

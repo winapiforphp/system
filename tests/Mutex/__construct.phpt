@@ -2,7 +2,7 @@
 Win\System\Mutex->__construct() method
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
@@ -10,7 +10,8 @@ use Win\System\Mutex;
 use Win\System\Event;
 use Win\System\Unicode;
 use Win\System\CodePage;
-use Win\System\ArgumentException;
+use Win\System\InvalidArgumentException;
+use Win\System\RuntimeException;
 
 // new unnamed mutex, have to pass by object now
 $mutex = new Mutex();
@@ -23,34 +24,34 @@ var_dump($mutex->getName());
 // try to open and own same mutex - will blow up
 try {
     $mutex = new Mutex('foobar', true);
-} catch (Exception $e) {
+} catch (RuntimeException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // try to open event with same name
 try {
     $event = new Event('foobar');
-} catch (Exception $e) {
+} catch (RuntimeException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // new unicode mutex
 $string = 'काचं शक्नोम्यत्तुम् । नोपहिनस्ति माम् ॥';
-$unicode = new Unicode($string, CodePage::UTF8);
+$unicode = new Unicode($string, new CodePage(CodePage::UTF8));
 $mutex = new Mutex($unicode);
 var_dump($mutex->getName() === $unicode);
 
 // try to open and own same mutex - will blow up
 try {
     $mutex = new Mutex($unicode, true);
-} catch (Exception $e) {
+} catch (RuntimeException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // try to open event with same name
 try {
     $event = new Event($unicode);
-} catch (Exception $e) {
+} catch (RuntimeException $e) {
     echo $e->getMessage(), "\n";
 }
 
@@ -70,28 +71,28 @@ var_dump($mutex->getName());
 // requires 0-3 args, 4 is too many
 try {
     $mutex = new Mutex(1, 1, 1, 1);
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // arg 1 must be stringable or instanceof Unicode
 try {
     $mutex = new Mutex(array(), 1, 1);
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // arg 2 must be booleanable
 try {
     $mutex = new Mutex('string', array(), 1);
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // arg 3 must be booleanable
 try {
     $mutex = new Mutex('string', 1, array());
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 ?>

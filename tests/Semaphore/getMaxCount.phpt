@@ -2,13 +2,13 @@
 Win\System\Semaphore->getMaxCount() method
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
 use Win\System\Semaphore;
-use Win\System\Exception;
-use Win\System\ArgumentException;
+use Win\System\InvalidArgumentException;
+use Win\System\RuntimeException;
 
 // create semaphore - default max count is 1
 $semaphore = new Semaphore(null, 0);
@@ -25,14 +25,14 @@ $semaphore = Semaphore::open('foobar');
 // bad number of args
 try {
     $semaphore->getMaxCount();
-} catch (Exception $e) {
+} catch (RuntimeException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // bad number of args
 try {
     $semaphore->getMaxCount(1);
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 ?>

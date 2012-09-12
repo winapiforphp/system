@@ -2,12 +2,12 @@
 Extending Semaphore
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
 use Win\System\Semaphore;
-use Win\System\Exception;
+use Win\System\RuntimeException;
 
 class goodSem extends Semaphore {}
 
@@ -30,7 +30,7 @@ var_dump($semaphore->getName());
 // bad semaphore will throw exception
 try {
     $semaphore = new badSem();
-} catch (Exception $e) {
+} catch (RuntimeException $e) {
     echo $e->getMessage(), "\n";
 }
 

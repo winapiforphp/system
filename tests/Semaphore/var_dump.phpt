@@ -18,7 +18,7 @@ var_dump($semaphore);
 
 // new unicode mutex
 $string = 'काचं शक्नोम्यत्तुम् । नोपहिनस्ति माम् ॥';
-$unicode = new Unicode($string, CodePage::UTF8);
+$unicode = new Unicode($string, new CodePage(CodePage::UTF8));
 $semaphore = new Semaphore($unicode);
 
 var_dump($semaphore);

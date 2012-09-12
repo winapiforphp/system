@@ -2,14 +2,14 @@
 Win\System\Event->getName() method
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
 use Win\System\Event;
-use Win\System\ArgumentException;
 use Win\System\Unicode;
 use Win\System\CodePage;
+use Win\System\InvalidArgumentException;
 
 // create an unnamed event
 $event = new Event();
@@ -29,14 +29,14 @@ var_dump($event->getName());
 
 // create a unicode semaphore
 $string = 'काचं शक्नोम्यत्तुम् । नोपहिनस्ति माम् ॥';
-$unicode = new Unicode($string, CodePage::UTF8);
+$unicode = new Unicode($string, new CodePage(CodePage::UTF8));
 $event = new Event($unicode);
 var_dump($event->getName() === $unicode);
 
 // bad number of args
 try {
     $event->getName(1);
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 ?>

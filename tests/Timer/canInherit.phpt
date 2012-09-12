@@ -2,12 +2,12 @@
 Win\System\Timer->canInherit() method
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
 use Win\System\Timer;
-use Win\System\ArgumentException;
+use Win\System\InvalidArgumentException;
 
 // create a normal timer, default inherit is true
 $timer = new Timer();
@@ -24,7 +24,7 @@ var_dump($timer->canInherit());
 // bad number of args
 try {
     $timer->canInherit(1);
-} catch (ArgumentException $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 ?>

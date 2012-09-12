@@ -2,12 +2,12 @@
 Extending Timer
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
 use Win\System\Timer;
-use Win\System\Exception;
+use Win\System\RuntimeException;
 
 class goodTimer extends Timer {}
 
@@ -30,7 +30,7 @@ var_dump($timer->getName());
 // bad timer will throw exception
 try {
     $timer = new badTimer();
-} catch (Exception $e) {
+} catch (RuntimeException $e) {
     echo $e->getMessage(), "\n";
 }
 

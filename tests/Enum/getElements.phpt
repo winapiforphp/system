@@ -7,6 +7,7 @@ include __DIR__ . '/../skipif.inc';
 --FILE--
 <?php
 use Win\System\Enum as Enum;
+use Win\System\InvalidArgumentException;
 
 class Fruit extends Enum {
     const Apple = 1;

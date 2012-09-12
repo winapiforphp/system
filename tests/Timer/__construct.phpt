@@ -2,12 +2,14 @@
 Win\System\Timer->__construct() method
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
 use Win\System\Timer;
 use Win\System\Semaphore;
+use Win\System\RuntimeException;
+use Win\System\InvalidArgumentException;
 
 // new unnamed timer, have to pass by object now
 $timer = new Timer();
@@ -20,7 +22,7 @@ var_dump($timer->getName());
 // try to open semaphore with same name
 try {
     $semaphore = new Semaphore('foobar');
-} catch (Exception $e) {
+} catch (RuntimeException $e) {
     echo $e->getMessage(), "\n";
 }
 
@@ -35,28 +37,28 @@ var_dump($timer->getName());
 // requires 0-3 args, 4 is too many
 try {
     $timer = new Timer(1, 1, 1, 1);
-} catch (Exception $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // arg 1 must be stringable
 try {
     $timer = new Timer(array(), 1, 1);
-} catch (Exception $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // arg 2 must be booleanable
 try {
     $timer = new Timer('string', array(), 1);
-} catch (Exception $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 
 // arg 3 must be booleanable
 try {
     $timer = new Timer('string', 1, array());
-} catch (Exception $e) {
+} catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
 ?>

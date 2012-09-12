@@ -2,7 +2,7 @@
 Win\System\Semaphore clone
 --SKIPIF--
 <?php
-if(!extension_loaded('winsystem')) die('skip - winsystem extension not available');
+include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
@@ -20,7 +20,7 @@ var_dump($sem1 !== $sem2);
 
 // new unicode mutex
 $string = 'काचं शक्नोम्यत्तुम् । नोपहिनस्ति माम् ॥';
-$unicode = new Unicode($string, CodePage::UTF8);
+$unicode = new Unicode($string, new CodePage(CodePage::UTF8));
 $sem1 = new Semaphore($unicode);
 
 $sem2 = clone $sem1;
