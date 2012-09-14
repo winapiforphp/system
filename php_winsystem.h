@@ -89,10 +89,8 @@ typedef union _winsystem_name {
 /* ----------------------------------------------------------------
   Class Entries
 ------------------------------------------------------------------*/
-extern zend_class_entry *ce_winsystem_invalidargumentexception;
 extern zend_class_entry *ce_winsystem_codepage;
 extern zend_class_entry *ce_winsystem_outofboundsexception;
-extern zend_class_entry *ce_winsystem_runtimeexception;
 extern zend_class_entry *ce_winsystem_event;
 extern zend_class_entry *ce_winsystem_waitable;
 
