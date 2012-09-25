@@ -56,6 +56,24 @@ PHP_WINSYSTEM_API void php_winsystem_set_enum_value(zval** enumclass, long value
 }
 /* }}} */
 
+/* {{{ php_winsystem_enum_check_valid */
+zend_bool php_winsystem_enum_check_valid(long value, zend_class_entry *ce)
+{
+	zend_bool valid = FALSE;
+	HashPosition pos;
+	zval **entry;
+
+	zend_hash_internal_pointer_reset_ex(&ce->constants_table, &pos);
+	while (SUCCESS == zend_hash_get_current_data_ex(&ce->constants_table, (void **)&entry, &pos)) {
+		if(value == Z_LVAL_PP(entry)) {
+			return TRUE;
+		}
+		zend_hash_move_forward_ex(&ce->constants_table, &pos);
+	}
+	return FALSE;
+}
+/* }}} */
+
 /* ----------------------------------------------------------------
     Win\System\Enum class API
 ------------------------------------------------------------------*/
