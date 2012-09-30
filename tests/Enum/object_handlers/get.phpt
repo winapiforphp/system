@@ -18,7 +18,7 @@ $fruit2 = new Fruit(Fruit::Pear);
 
 var_dump($fruit1 + $fruit2);
 ?>
-= DONE =
+===DONE===
 --EXPECTF--
 int(3)
-= DONE =
+===DONE===

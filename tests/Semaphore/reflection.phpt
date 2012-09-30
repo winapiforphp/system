@@ -2,7 +2,7 @@
 Win\System\Sempahore Reflection
 --SKIPIF--
 <?php
-include __DIR__ . '/../../skipif.inc';
+include __DIR__ . '/../skipif.inc';
 ?>
 --FILE--
 <?php

@@ -49,7 +49,7 @@ try {
     echo $e->getMessage(), PHP_EOL;
 }
 ?>
-= DONE =
+===DONE===
 --EXPECT--
 Value provided is not a const in enum Test
 Value provided is not a const in enum Fruit
@@ -61,4 +61,4 @@ Value provided is not a const in enum Fruit
 2
 2
 Win\System\Enum::__construct() expects exactly 1 parameter, 0 given
-= DONE =
+===DONE===

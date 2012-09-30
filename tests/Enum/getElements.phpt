@@ -32,7 +32,7 @@ try {
     echo $e->getMessage(), PHP_EOL;
 }
 ?>
-= DONE =
+===DONE===
 --EXPECTF--
 array(2) {
   ["Apple"]=>
@@ -51,4 +51,4 @@ array(2) {
   int(0)
 }
 Win\System\Enum::getElements() expects exactly 0 parameters, 1 given
-= DONE =
+===DONE===

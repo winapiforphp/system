@@ -24,6 +24,7 @@ static zend_object_handlers winsystem_timer_object_handlers;
 static zend_function winsystem_timer_constructor_wrapper;
 
 VOID CALLBACK php_winsystem_timer_callback(LPVOID param, DWORD timerlow, DWORD timerhigh);
+static void winsystem_timer_callback_cleanup(winsystem_timer_callback *store TSRMLS_DC);
 
 struct _winsystem_timer_callback {
 	zend_fcall_info callback_info;
@@ -231,22 +232,11 @@ PHP_METHOD(WinSystemTimer, cancel)
 	}
 	PHP_WINSYSTEM_RESTORE_ERRORS
 
-	if (timer_object->store != NULL) {
-		if (timer_object->store->callback_info.params) {
-			zval ***params  = timer_object->store->callback_info.params;
-			int param_count = timer_object->store->callback_info.param_count;
-
-				while (--param_count) {
-					zval_ptr_dtor(params[param_count]);
-				}
-		}
-
-		zval_ptr_dtor(&(timer_object->store->callback_info.function_name));
-		if (timer_object->store->callback_info.object_ptr) {
-			zval_ptr_dtor(&(timer_object->store->callback_info.object_ptr));
-		}
+	if (NULL != timer_object->store) {
+		winsystem_timer_callback_cleanup(timer_object->store TSRMLS_CC);
+		efree(timer_object->store);
+		timer_object->store = NULL;
 	}
-	timer_object->store = NULL;
 
 	RETURN_BOOL(CancelWaitableTimer(timer_object->handle));
 }
@@ -261,16 +251,15 @@ PHP_METHOD(WinSystemTimer, set)
 	zend_bool resume = FALSE;
 	zend_fcall_info finfo;
 	zend_fcall_info_cache fcache;
-	zval ***args = NULL;
-	int argc = 0, i = 0;
 	PTIMERAPCROUTINE entry = NULL;
-	winsystem_timer_callback *store = NULL;
+	zval ***args = NULL;
 	winsystem_timer_object *timer = (winsystem_timer_object*)zend_object_store_get_object(getThis() TSRMLS_CC);
 
 	PHP_WINSYSTEM_EXCEPTIONS
 	/* This is dirty as sin, but I need to be able to tell if we hit a callback */
 	finfo.size = 0;
-	if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l|lbf*", &interval, &period, &resume, &finfo, &fcache, &args, &argc)) {
+	finfo.param_count = 0;
+	if (FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l|lbf*", &interval, &period, &resume, &finfo, &fcache, &args, &finfo.param_count)) {
 		PHP_WINSYSTEM_RESTORE_ERRORS
 		return;
 	}
@@ -278,39 +267,52 @@ PHP_METHOD(WinSystemTimer, set)
 
 	/* the earlier hack makes this not blow up, even if no callback is hit */
 	if (finfo.size > 0) {
-		if (argc) {
-			for(i = 0; i < argc; i++) {
-					zval **newppzval = emalloc(sizeof(zval*));
-					MAKE_STD_ZVAL(*newppzval);
-					ZVAL_ZVAL(*newppzval, *args[i], 1, 0);
-					Z_SET_REFCOUNT_PP(newppzval, 2);
-					args[i] = newppzval;
+		/* if we've never had a callback stored, allocate some memory for it */
+		if (NULL == timer->store) {
+			timer->store = emalloc(sizeof(winsystem_timer_callback));
+			timer->store->refcount = 0;
+		} else {
+			winsystem_timer_callback_cleanup(timer->store TSRMLS_CC);
+		}
+
+		/* filename, line number and thread context */
+		timer->store->src_filename = estrdup(zend_get_executed_filename(TSRMLS_C));
+		timer->store->src_lineno = zend_get_executed_lineno(TSRMLS_C);
+#ifdef ZTS
+		timer->store->TSRMLS_C = TSRMLS_C;
+#endif
+
+		/* store our callback info and cache */
+		timer->store->callback_info = finfo;
+		timer->store->callback_cache = fcache;
+
+		/* add refs for object pointer and function name */
+		if (timer->store->callback_info.object_ptr) {
+			zval_add_ref(&(timer->store->callback_info.object_ptr));
+		}
+		zval_add_ref(&(timer->store->callback_info.function_name));
+
+		/* make new zvals from old */
+		if(finfo.param_count) {
+			unsigned int i;
+			timer->store->callback_info.params = safe_emalloc(finfo.param_count, sizeof(zval*), 0);
+
+			for(i = 0; i < finfo.param_count; i++) {
+				zval **newppzval = emalloc(sizeof(zval*));
+				MAKE_STD_ZVAL(*newppzval);
+				ZVAL_ZVAL(*newppzval, *args[i], 1, 0);
+				timer->store->callback_info.params[i] = newppzval;
 			}
 		}
 
-		store = emalloc(sizeof(winsystem_timer_callback));
-
-		store->callback_info = finfo;
-		if (store->callback_info.object_ptr) {
-			zval_add_ref(&(store->callback_info.object_ptr));
-		}
-		zval_add_ref(&(store->callback_info.function_name));
-		store->callback_cache = fcache;
-
-		store->src_filename = estrdup(zend_get_executed_filename(TSRMLS_C));
-		store->src_lineno = zend_get_executed_lineno(TSRMLS_C);
-		store->callback_info.params      = args;
-		store->callback_info.param_count = argc;
-		store->refcount = 0;
-#ifdef ZTS
-		store->TSRMLS_C = TSRMLS_C;
-#endif
-		timer->store = store;
 		entry = php_winsystem_timer_callback;
+	}
+	if (NULL != args) {
+		efree(args);
 	}
 
 	duetime.QuadPart = (-((__int64)interval)) * 10LL;
-	RETURN_BOOL(SetWaitableTimer(timer->handle, &duetime, period, entry, store, resume));
+	RETURN_BOOL(SetWaitableTimer(timer->handle, &duetime, period, entry, timer->store, resume));
 }
 /* }}} */
 
@@ -359,15 +361,35 @@ VOID CALLBACK php_winsystem_timer_callback(LPVOID param, DWORD timerlow, DWORD t
 		TSRMLS_D = store->TSRMLS_C;
 #endif
 		store->callback_info.retval_ptr_ptr = &retval_ptr;
+
 		if (FAILURE == zend_call_function(&(store->callback_info), &(store->callback_cache) TSRMLS_CC)) {
 			php_error(E_RECOVERABLE_ERROR, "Error calling %s", store->callback_info.function_name);
 		}
+		zval_ptr_dtor(&retval_ptr);
 	}
 }
 
 /* ----------------------------------------------------------------
   Win\System\Timer Object Magic LifeCycle Functions
 ------------------------------------------------------------------*/
+/* {{{ cleanup for the timer callback  */
+static void winsystem_timer_callback_cleanup(winsystem_timer_callback *store TSRMLS_DC)
+{
+	efree(store->src_filename);
+	zval_ptr_dtor(&(store->callback_info.function_name));
+	if (store->callback_info.object_ptr) {
+		zval_ptr_dtor(&(store->callback_info.object_ptr));
+	}
+	if(store->callback_info.param_count) {
+		unsigned int i;
+
+		for(i = 0; i < store->callback_info.param_count; i++) {
+			zval_ptr_dtor(store->callback_info.params[i]);
+			efree(store->callback_info.params[i]);
+		}
+		efree(store->callback_info.params);
+	}
+}
 
 /* {{{ winsystem_timer_construction_wrapper
        wraps around the constructor to make sure parent::__construct is always called  */
@@ -440,7 +462,8 @@ static void winsystem_timer_object_free(void *object TSRMLS_DC)
 	zend_object_std_dtor(&timer_object->std TSRMLS_CC);
 
 	if (timer_object->is_unicode) {
-		Z_DELREF_P(timer_object->name.unicode_object);
+		/* this will delref and clean up if refcount is 0 */
+		zval_ptr_dtor(&timer_object->name.unicode_object);
 	} else if (timer_object->name.string) {
 		efree(timer_object->name.string);
 	}
@@ -450,23 +473,12 @@ static void winsystem_timer_object_free(void *object TSRMLS_DC)
 			timer_object->store->refcount--;
 			timer_object->store = NULL;
 		} else {
-			if (timer_object->store->callback_info.params) {
-				zval ***params  = timer_object->store->callback_info.params;
-				int param_count = timer_object->store->callback_info.param_count;
-
-					while (--param_count) {
-						zval_ptr_dtor(params[param_count]);
-					}
-			}
-
-			zval_ptr_dtor(&(timer_object->store->callback_info.function_name));
-			if (timer_object->store->callback_info.object_ptr) {
-				zval_ptr_dtor(&(timer_object->store->callback_info.object_ptr));
-			}
 			if (timer_object->handle != NULL) {
 				/* This might fail if the timer is not set, but we don't care */
 				CancelWaitableTimer(timer_object->handle);
 			}
+			winsystem_timer_callback_cleanup(timer_object->store TSRMLS_CC);
+			efree(timer_object->store);	
 		}
 	}
 
@@ -525,6 +537,8 @@ static zend_object_value winsystem_timer_object_clone(zval *this_ptr TSRMLS_DC)
 
 	new_timer_object->can_inherit = old_timer_object->can_inherit;
 	new_timer_object->is_constructed = TRUE;
+	new_timer_object->store = NULL;
+
 	if (old_timer_object->store) {
 		new_timer_object->store = old_timer_object->store;
 		new_timer_object->store->refcount++;

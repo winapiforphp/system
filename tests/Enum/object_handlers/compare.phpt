@@ -29,7 +29,7 @@ var_dump($fruit1 === 1);
 var_dump($fruit1 == 1);
 
 ?>
-= DONE =
+===DONE===
 --EXPECT--
 bool(false)
 bool(true)
@@ -38,4 +38,4 @@ bool(false)
 bool(true)
 bool(false)
 bool(true)
-= DONE =
+===DONE===

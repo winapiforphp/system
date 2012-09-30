@@ -1,24 +1,32 @@
 --TEST--
-Win\System\Enum object get handler;
+Win\System\Unicode object get handler;
 --SKIPIF--
 <?php
 include __DIR__ . '/../../skipif.inc';
 ?>
 --FILE--
 <?php
-use Win\System\Enum as Enum;
+use Win\System\Unicode;
+use Win\System\Codepage;
 
-class Fruit extends Enum {
-    const Apple = 1;
-    const Pear = 2;
-}
+include __DIR__ . '/../../strings.inc';
 
-$fruit1 = new Fruit(Fruit::Apple);
-$fruit2 = new Fruit(Fruit::Pear);
+$unicode = new Unicode($ascii, new CodePage(CodePage::US_ASCII));
+echo $unicode . ' foobar', PHP_EOL;
 
-var_dump($fruit1 + $fruit2);
+$unicode = new Unicode($utf8, new CodePage(CodePage::UTF8));
+echo $unicode . ' foobar', PHP_EOL;
+
+$unicode = new Unicode($utf16, new CodePage(CodePage::UTF16));
+echo $unicode . ' foobar', PHP_EOL;
+
+$unicode = new Unicode($utf16be, new CodePage(CodePage::UTF16BE));
+echo $unicode . ' foobar', PHP_EOL;
 ?>
-= DONE =
+===DONE===
 --EXPECTF--
-int(3)
-= DONE =
+This is my string foobar
+काचं शक्नोम्यत्तुम् । नोपहिनस्ति माम् ॥ foobar
+日本語 foobar
+日本語 foobar
+===DONE===

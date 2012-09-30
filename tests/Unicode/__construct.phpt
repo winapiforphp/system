@@ -27,7 +27,7 @@ $unicode = new Unicode($utf16be, new CodePage(CodePage::UTF16BE));
 echo $unicode, PHP_EOL;
 var_dump(strlen($unicode));
 ?>
-= DONE =
+===DONE===
 --EXPECT--
 This is my string
 int(17)
@@ -37,4 +37,4 @@ int(107)
 int(9)
 日本語
 int(9)
-= DONE =
+===DONE===

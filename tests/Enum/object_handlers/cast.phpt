@@ -22,7 +22,7 @@ var_dump((object)$fruit);
 var_dump((float)$fruit);
 var_dump((bool)$fruit);
 ?>
-= DONE =
+===DONE===
 --EXPECTF--
 string(1) "1"
 int(1)
@@ -41,4 +41,4 @@ object(Fruit)#1 (2) {
 }
 float(1)
 bool(true)
-= DONE =
+===DONE===

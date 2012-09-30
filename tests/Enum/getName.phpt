@@ -27,9 +27,9 @@ try {
     echo $e->getMessage(), PHP_EOL;
 }
 ?>
-= DONE =
+===DONE===
 --EXPECTF--
 string(5) "Apple"
 string(4) "Pear"
 Win\System\Enum::getName() expects exactly 0 parameters, 1 given
-= DONE =
+===DONE===

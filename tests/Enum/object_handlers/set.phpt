@@ -34,7 +34,7 @@ try {
     echo $e->getMessage(), PHP_EOL;
 }
 ?>
-= DONE =
+===DONE===
 --EXPECTF--
 1
 object(Fruit)#%d (2) {
@@ -54,4 +54,4 @@ object(Fruit)#%d (2) {
 1
 3
 Value provided is not a const in enum Fruit
-= DONE =
+===DONE===

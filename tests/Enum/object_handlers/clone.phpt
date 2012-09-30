@@ -32,7 +32,7 @@ echo $fruit2, PHP_EOL;
 
 var_dump($fruit1 == $fruit2);
 ?>
-= DONE =
+===DONE===
 --EXPECT--
 1
 1
@@ -40,4 +40,4 @@ bool(true)
 bool(true)
 5
 bool(false)
-= DONE =
+===DONE===

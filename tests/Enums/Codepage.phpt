@@ -15,7 +15,7 @@ var_dump($page instanceof Enum);
 var_dump($page);
 
 ?>
-= DONE =
+===DONE===
 --EXPECT--
 1200
 bool(true)
@@ -324,4 +324,4 @@ object(Win\System\Codepage)#1 (2) {
   ["__value"]=>
   int(1200)
 }
-= DONE =
+===DONE===

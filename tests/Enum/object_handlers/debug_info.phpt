@@ -21,7 +21,7 @@ $fruit = new Fruit(Fruit::Apple);
 $fruit->property = 'foobar';
 var_dump($fruit);
 ?>
-= DONE =
+===DONE===
 --EXPECT--
 object(Fruit)#1 (4) {
   ["test"]=>
@@ -42,4 +42,4 @@ object(Fruit)#1 (4) {
   ["__value"]=>
   int(1)
 }
-= DONE =
+===DONE===

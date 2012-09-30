@@ -2,7 +2,7 @@
 Win\System\Timer->set() method
 --SKIPIF--
 <?php
-include __DIR__ . '/../../skipif.inc';
+include __DIR__ . '/../skipif.inc';
 ?>
 --FILE--
 <?php
@@ -89,7 +89,6 @@ try {
 } catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
-
 // arg 2 must be int
 try {
     var_dump($timer->set(1, array()));
