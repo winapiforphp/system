@@ -10,4 +10,6 @@ $ext = new ReflectionExtension('winsystem');
 $ext->info();
 ?>
 --EXPECTF--
-string(%d) "Version => %s"
+winsystem
+
+Version => %d.%d.%d%s

@@ -31,7 +31,7 @@ var_dump($mutex->getName());
 $string = 'काचं शक्नोम्यत्तुम् । नोपहिनस्ति माम् ॥';
 $unicode = new Unicode($string, new CodePage(CodePage::UTF8));
 $mutex = new Mutex($unicode);
-var_dump($mutex->getName() === $unicode);
+var_dump($mutex->getName() == $unicode);
 
 unset($unicode);
 var_dump($mutex->getName() instanceof Unicode);

@@ -42,6 +42,7 @@ extern PHP_WINSYSTEM_API void winsystem_create_error(int error, zend_class_entry
 extern PHP_WINSYSTEM_API WCHAR * php_winsystem_unicode_char_to_wchar(const CHAR ** utf8_string, int codepage);
 extern PHP_WINSYSTEM_API CHAR * php_winsystem_unicode_wchar_to_char(const WCHAR ** utf16_string, int codepage);
 extern PHP_WINSYSTEM_API WCHAR * php_winsystem_unicode_get_wchar(zval** unicodeclass TSRMLS_DC);
+extern PHP_WINSYSTEM_API CHAR * php_winsystem_unicode_get_char(zval** unicodeclass TSRMLS_DC);
 extern PHP_WINSYSTEM_API void php_winsystem_unicode_create(zval** object, wchar_t *text, int length TSRMLS_DC);
 
 extern PHP_WINSYSTEM_API long php_winsystem_get_enum_value(zval** enumclass TSRMLS_DC);

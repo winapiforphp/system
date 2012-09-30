@@ -121,9 +121,9 @@ PHP_METHOD(WinSystemEvent, __construct)
 		event->name.string = estrdup(name);
 	} else if (use_unicode) {
 		/* ref our object and store it */
-		Z_ADDREF_P(unicode);
 		event->name.unicode_object = unicode;
 		event->is_unicode = TRUE;
+		Z_ADDREF_P(event->name.unicode_object);
 	}
 }
 /* }}} */
@@ -182,9 +182,9 @@ PHP_METHOD(WinSystemEvent, open)
 		event->name.string = estrdup(name);
 	} else if (use_unicode) {
 		/* ref our object and store it */
-		Z_ADDREF_P(unicode);
 		event->name.unicode_object = unicode;
 		event->is_unicode = TRUE;
+		Z_ADDREF_P(event->name.unicode_object);
 	}
 }
 /* }}} */
@@ -365,10 +365,9 @@ static void winsystem_event_object_free(void *object TSRMLS_DC)
 {
 	winsystem_event_object *event_object = (winsystem_event_object *)object;
 
-	zend_object_std_dtor(&event_object->std TSRMLS_CC);
-
 	if (event_object->is_unicode) {
-		Z_DELREF_P(event_object->name.unicode_object);
+		/* this will delref and clean up if refcount is 0 */
+		zval_ptr_dtor(&event_object->name.unicode_object);
 	} else if (event_object->name.string) {
 		efree(event_object->name.string);
 	}
@@ -376,6 +375,8 @@ static void winsystem_event_object_free(void *object TSRMLS_DC)
 	if(event_object->handle != NULL){
 		CloseHandle(event_object->handle);
 	}
+
+	zend_object_std_dtor(&event_object->std TSRMLS_CC);
 	
 	efree(event_object);
 }

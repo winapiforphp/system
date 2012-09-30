@@ -381,7 +381,8 @@ static void winsystem_semaphore_object_free(void *object TSRMLS_DC)
 	zend_object_std_dtor(&semaphore_object->std TSRMLS_CC);
 
 	if (semaphore_object->is_unicode) {
-		Z_DELREF_P(semaphore_object->name.unicode_object);
+		/* this will delref and clean up if refcount is 0 */
+		zval_ptr_dtor(&semaphore_object->name.unicode_object);
 	} else if (semaphore_object->name.string) {
 		efree(semaphore_object->name.string);
 	}

@@ -209,9 +209,9 @@ PHP_METHOD(WinSystemMutex, getName)
 	if (mutex_object->is_unicode) {
 		RETURN_ZVAL(mutex_object->name.unicode_object, 1, 0);
 	} else if (mutex_object->name.string) {
-		RETURN_STRING(mutex_object->name.string, 1)
+		RETURN_STRING(mutex_object->name.string, 1);
 	}
-	RETURN_NULL()
+	RETURN_NULL();
 }
 /* }}} */
 
@@ -344,7 +344,8 @@ static void winsystem_mutex_object_free(void *object TSRMLS_DC)
 	zend_object_std_dtor(&mutex_object->std TSRMLS_CC);
 
 	if (mutex_object->is_unicode) {
-		Z_DELREF_P(mutex_object->name.unicode_object);
+		/* this will delref and clean up if refcount is 0 */
+		zval_ptr_dtor(&mutex_object->name.unicode_object);
 	} else if (mutex_object->name.string) {
 		efree(mutex_object->name.string);
 	}

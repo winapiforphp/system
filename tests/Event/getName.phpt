@@ -33,17 +33,22 @@ $unicode = new Unicode($string, new CodePage(CodePage::UTF8));
 $event = new Event($unicode);
 var_dump($event->getName() === $unicode);
 
+unset($unicode);
+var_dump($event->getName() instanceof Unicode);
+
 // bad number of args
 try {
     $event->getName(1);
 } catch (InvalidArgumentException $e) {
     echo $e->getMessage(), "\n";
 }
+unset($event);
 ?>
 --EXPECT--
 NULL
 NULL
 string(0) ""
 string(6) "foobar"
+bool(true)
 bool(true)
 Win\System\Event::getName() expects exactly 0 parameters, 1 given
