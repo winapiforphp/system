@@ -8,6 +8,7 @@ include __DIR__ . '/../skipif.inc';
 <?php
 ReflectionClass::export('Win\System\Waitable');
 ?>
+===DONE===
 --EXPECT--
 Interface [ <internal:winsystem> interface Win\System\Waitable ] {
 
@@ -51,3 +52,4 @@ Interface [ <internal:winsystem> interface Win\System\Waitable ] {
     }
   }
 }
+===DONE===

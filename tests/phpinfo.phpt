@@ -9,7 +9,9 @@ include __DIR__ . '/skipif.inc';
 $ext = new ReflectionExtension('winsystem');
 $ext->info();
 ?>
+===DONE===
 --EXPECTF--
 winsystem
 
 Version => %d.%d.%d%s
+===DONE===

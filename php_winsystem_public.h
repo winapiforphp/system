@@ -47,7 +47,7 @@ extern PHP_WINSYSTEM_API void php_winsystem_unicode_create(zval** object, wchar_
 
 extern PHP_WINSYSTEM_API long php_winsystem_get_enum_value(zval** enumclass TSRMLS_DC);
 extern PHP_WINSYSTEM_API void php_winsystem_set_enum_value(zval** enumclass, long value TSRMLS_DC);
-extern PHP_WINSYSTEM_API zend_bool php_winsystem_enum_check_valid(long value, zend_class_entry *ce);
+extern PHP_WINSYSTEM_API int php_winsystem_enum_check_valid(long value, zend_class_entry *ce TSRMLS_DC);
 
 /* ----------------------------------------------------------------
   Exported Class Entries

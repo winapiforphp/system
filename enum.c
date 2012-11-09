@@ -57,7 +57,7 @@ PHP_WINSYSTEM_API void php_winsystem_set_enum_value(zval** enumclass, long value
 /* }}} */
 
 /* {{{ php_winsystem_enum_check_valid */
-zend_bool php_winsystem_enum_check_valid(long value, zend_class_entry *ce)
+int php_winsystem_enum_check_valid(long value, zend_class_entry *ce TSRMLS_DC)
 {
 	zend_bool valid = FALSE;
 	HashPosition pos;
@@ -66,11 +66,12 @@ zend_bool php_winsystem_enum_check_valid(long value, zend_class_entry *ce)
 	zend_hash_internal_pointer_reset_ex(&ce->constants_table, &pos);
 	while (SUCCESS == zend_hash_get_current_data_ex(&ce->constants_table, (void **)&entry, &pos)) {
 		if(value == Z_LVAL_PP(entry)) {
-			return TRUE;
+			return SUCCESS;
 		}
 		zend_hash_move_forward_ex(&ce->constants_table, &pos);
 	}
-	return FALSE;
+	zend_throw_exception_ex(spl_ce_UnexpectedValueException, 0 TSRMLS_CC, "Value provided is not a const in enum %s", ce->name);
+	return FAILURE;
 }
 /* }}} */
 

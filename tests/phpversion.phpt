@@ -8,5 +8,7 @@ include __DIR__ . '/skipif.inc';
 <?php
 var_dump(phpversion('winsystem'));
 ?>
+===DONE===
 --EXPECTF--
 string(%d) "%s"
+===DONE===

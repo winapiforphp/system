@@ -8,6 +8,7 @@ include __DIR__ . '/../skipif.inc';
 <?php
 ReflectionClass::export('Win\System\WaitMask');
 ?>
+===DONE===
 --EXPECT--
 Class [ <internal:winsystem> abstract final class Win\System\WaitMask ] {
 
@@ -40,3 +41,4 @@ Class [ <internal:winsystem> abstract final class Win\System\WaitMask ] {
   - Methods [0] {
   }
 }
+===DONE===
